@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم | رف الكتب</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a3d;
+            --primary-dark: #14282a;
+            --gold: #f2cd98;
+            --bg: #f9f6f0;
+            --white: #ffffff;
+            --danger: #c0392b;
+            --success: #27ae60;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background: var(--bg); color: #2b2b2b; }
+
+        #loginOverlay {
+            position: fixed;
+            inset: 0;
+            background: var(--primary-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+        .login-box {
+            background: var(--white);
+            padding: 35px 30px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        .login-box h2 { color: var(--primary-dark); margin-bottom: 8px; border: none; }
+        .login-box p { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+
+        header {
+            background: var(--primary);
+            color: var(--gold);
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .header-actions { display: flex; gap: 10px; align-items: center; }
+        header a {
+            color: var(--primary-dark);
+            background: var(--gold);
+            padding: 8px 16px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .btn-logout { background: var(--danger); color: #fff; padding: 8px 14px; border-radius: 20px; font-size: 0.85rem; }
+
+        .container { max-width: 1250px; margin: 25px auto; padding: 0 20px; }
+
+        /* بطاقات الإحصائيات */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
+            margin-bottom: 25px;
+        }
+        .stat-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 12px;
+            border-right: 5px solid var(--primary);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .stat-card span { color: #666; font-size: 0.9rem; }
+        .stat-card h3 { color: var(--primary-dark); font-size: 1.8rem; margin-top: 5px; }
+
+        /* أزرار التبويب */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            background: var(--white);
+            color: var(--primary);
+            border: 2px solid var(--primary);
+            padding: 10px 22px;
+            border-radius: 25px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .tab-btn.active { background: var(--primary); color: var(--gold); }
+
+        .card {
+            background: var(--white);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        h2 { color: var(--primary-dark); margin-bottom: 18px; border-bottom: 2px solid var(--gold); padding-bottom: 8px; display: inline-block; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 12px;
+        }
+        input, select {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            width: 100%;
+        }
+        button {
+            background: var(--primary);
+            color: var(--white);
+            border: none;
+            padding: 9px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        button:hover { opacity: 0.9; }
+        .btn-sm { padding: 5px 10px; font-size: 0.8rem; border-radius: 6px; }
+        .btn-danger { background: var(--danger); }
+        .btn-success { background: var(--success); }
+
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 800px; }
+        th, td { padding: 11px; text-align: right; border-bottom: 1px solid #eee; font-size: 0.9rem; vertical-align: middle; }
+        th { background: var(--primary); color: var(--gold); }
+        tr:hover { background: #fafafa; }
+        .book-thumb { width: 45px; height: 62px; object-fit: cover; border-radius: 4px; }
+        .items-list { list-style: none; padding: 0; }
+        .items-list li { margin-bottom: 3px; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+
+<!-- شاشة القفل -->
+<div id="loginOverlay">
+    <form class="login-box" onsubmit="handleLogin(event)">
+        <h2>🔒 إدارة رف الكتب</h2>
+        <p>أدخل كلمة المرور للوصول إلى لوحة التحكم</p>
+        <input type="password" id="adminPassInput" placeholder="كلمة المرور" required style="margin-bottom: 15px; text-align: center;">
+        <button type="submit" style="width: 100%; padding: 12px;">دخول</button>
+    </form>
+</div>
+
+<!-- لوحة التحكم -->
+<div id="dashboardContent" style="display: none;">
+    <header>
+        <h1>لوحة إدارة متجر رف الكتب</h1>
+        <div class="header-actions">
+            <a href="/">العودة للمتجر ↗</a>
+            <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- الإحصائيات السريعة -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span>إجمالي الطلبات</span>
+                <h3 id="statOrdersCount">0</h3>
+            </div>
+            <div class="stat-card">
+                <span>إجمالي المبيعات (الفعّالة)</span>
+                <h3 id="statTotalSales">0 ج.م</h3>
+            </div>
+            <div class="stat-card">
+                <span>عدد الكتب في المتجر</span>
+                <h3 id="statBooksCount">0</h3>
+            </div>
+        </div>
+
+        <!-- التبويبات -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('ordersTab', this)">📦 إدارة الطلبات</button>
+            <button class="tab-btn" onclick="switchTab('booksTab', this)">📚 إدارة الكتب والمخزون</button>
+        </div>
+
+        <!-- تبويب الطلبات -->
+        <div id="ordersTab" class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h2 style="margin:0;">الطلبات الواردة</h2>
+                <button onclick="loadOrders()">تحديث الطلبات ↻</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>العميل</th>
+                            <th>الموبايل (واتساب)</th>
+                            <th>العنوان</th>
+                            <th>الكتب المطلوبة</th>
+                            <th>الإجمالي</th>
+                            <th>التوقيت</th>
+                            <th>الحالة</th>
+                            <th>إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- تبويب الكتب -->
+        <div id="booksTab" style="display: none;">
+            <!-- إضافة كتاب جديد -->
+            <div class="card">
+                <h2>➕ إضافة كتاب جديد</h2>
+                <form id="addBookForm" class="form-grid" onsubmit="addBook(event)">
+                    <input type="text" id="bookTitle" placeholder="اسم الكتاب *" required>
+                    <input type="text" id="bookAuthor" placeholder="اسم المؤلف *" required>
+                    <select id="bookCategory" required>
+                        <option value="رعب">رعب</option>
+                        <option value="رومانسية">رومانسية</option>
+                        <option value="مغامرة">مغامرة</option>
+                        <option value="دينية">قرآن وكتب دينية</option>
+                        <option value="غموض وجريمة">غموض وجريمة</option>
+                        <option value="علم نفس وتنمية">علم نفس وتنمية بشرية</option>
+                    </select>
+                    <input type="number" id="bookPrice" placeholder="السعر بالجنيه *" required>
+                    <input type="file" id="bookCoverFile" accept="image/*" title="اختر صورة غلاف الكتاب">
+                    <input type="text" id="bookDesc" placeholder="وصف مختصر للكتاب">
+                    <button type="submit">حفظ الكتاب +</button>
+                </form>
+            </div>
+
+            <!-- جدول الكتب الموجودة -->
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                    <h2 style="margin:0;">قائمة الكتب المتاحة</h2>
+                    <input type="text" id="adminBookSearch" placeholder="ابحث باسم الكتاب أو المؤلف..." oninput="filterAdminBooks()" style="max-width: 280px;">
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>الغلاف</th>
+                                <th>اسم الكتاب</th>
+                                <th>المؤلف</th>
+                                <th>القسم</th>
+                                <th>السعر (ج.م)</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="booksBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let allBooks = [];
+
+    function getAuthHeaders(isJson = true) {
+        const headers = { "X-Admin-Password": sessionStorage.getItem("admin_pass") || "" };
+        if (isJson) headers["Content-Type"] = "application/json";
+        return headers;
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const pass = document.getElementById("adminPassInput").value;
+        const res = await fetch("/api/admin/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password: pass })
+        });
+        if (res.ok) {
+            sessionStorage.setItem("admin_pass", pass);
+            showDashboard();
+        } else {
+            alert("كلمة المرور غير صحيحة!");
+        }
+    }
+
+    function logout() {
+        sessionStorage.removeItem("admin_pass");
+        location.reload();
+    }
+
+    function showDashboard() {
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("dashboardContent").style.display = "block";
+        loadOrders();
+        loadAdminBooks();
+    }
+
+    function switchTab(tabId, btn) {
+        document.getElementById("ordersTab").style.display = tabId === "ordersTab" ? "block" : "none";
+        document.getElementById("booksTab").style.display = tabId === "booksTab" ? "block" : "none";
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+    }
+
+    // --- إدارة الطلبات ---
+    async function loadOrders() {
+        const res = await fetch("/api/orders", { headers: getAuthHeaders() });
+        if (res.status === 401) return logout();
+
+        const orders = await res.json();
+        document.getElementById("statOrdersCount").textContent = orders.length;
+        const activeSales = orders.filter(o => o.status !== "ملغي").reduce((s, o) => s + o.total_price, 0);
+        document.getElementById("statTotalSales").textContent = `${activeSales} ج.م`;
+
+        const tbody = document.getElementById("ordersBody");
+        if (orders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px;">لا توجد طلبات مسجلة حتى الآن.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = orders.map(o => `
+            <tr>
+                <td><strong>#${o.id}</strong></td>
+                <td>${o.customer_name}</td>
+                <td dir="ltr" style="text-align:right;"><a href="https://wa.me/2${o.customer_phone.replace(/^0+/, '0')}" target="_blank" style="color:#1e3a3d; font-weight:bold;">${o.customer_phone || "-"}</a></td>
+                <td>${o.customer_address || "-"}</td>
+                <td>
+                    <ul class="items-list">
+                        ${o.items.map(i => `<li>• ${i.title} (${i.qty} × ${i.price} ج.م)</li>`).join("")}
+                    </ul>
+                </td>
+                <td><strong>${o.total_price} ج.م</strong></td>
+                <td dir="ltr" style="text-align:right; font-size:0.8rem;">${o.created_at}</td>
+                <td>
+                    <select onchange="changeStatus(${o.id}, this.value)" style="padding:5px; font-size:0.85rem;">
+                        <option value="قيد المراجعة" ${o.status === "قيد المراجعة" ? "selected" : ""}>قيد المراجعة</option>
+                        <option value="جاري التجهيز" ${o.status === "جاري التجهيز" ? "selected" : ""}>جاري التجهيز</option>
+                        <option value="خرج للتوصيل" ${o.status === "خرج للتوصيل" ? "selected" : ""}>خرج للتوصيل</option>
+                        <option value="تم التسليم" ${o.status === "تم التسليم" ? "selected" : ""}>تم التسليم</option>
+                        <option value="ملغي" ${o.status === "ملغي" ? "selected" : ""}>ملغي</option>
+                    </select>
+                </td>
+                <td>
+                    <button class="btn-sm btn-danger" onclick="deleteOrder(${o.id})">حذف</button>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    async function changeStatus(orderId, newStatus) {
+        const res = await fetch(`/api/orders/${orderId}`, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ status: newStatus })
+        });
+        if (res.status === 401) return logout();
+        loadOrders();
+    }
+
+    async function deleteOrder(orderId) {
+        if (!confirm(`هل أنت متأكد من حذف الطلب #${orderId}؟`)) return;
+        const res = await fetch(`/api/orders/${orderId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (res.ok) loadOrders();
+    }
+
+    // --- إدارة الكتب ---
+    async function loadAdminBooks() {
+        const res = await fetch("/api/books");
+        allBooks = await res.json();
+        document.getElementById("statBooksCount").textContent = allBooks.length;
+        renderAdminBooks(allBooks);
+    }
+
+    function renderAdminBooks(list) {
+        const tbody = document.getElementById("booksBody");
+        tbody.innerHTML = list.map(b => `
+            <tr>
+                <td>${b.id}</td>
+                <td><img src="${b.cover}" class="book-thumb" alt="${b.title}"></td>
+                <td><strong>${b.title}</strong></td>
+                <td>${b.author}</td>
+                <td>${b.category}</td>
+                <td>
+                    <input type="number" id="price_${b.id}" value="${b.price}" style="width: 85px; padding: 5px;">
+                </td>
+                <td style="display:flex; gap:6px;">
+                    <button class="btn-sm btn-success" onclick="saveBookPrice(${b.id})">حفظ السعر</button>
+                    <button class="btn-sm btn-danger" onclick="deleteBook(${b.id}, '${b.title}')">حذف</button>
+                </td>
+            </tr>
+        `).join("");
+    }
+
+    function filterAdminBooks() {
+        const q = document.getElementById("adminBookSearch").value.trim().toLowerCase();
+        const filtered = allBooks.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+        renderAdminBooks(filtered);
+    }
+
+    async function addBook(e) {
+        e.preventDefault();
+        let coverFilename = "logo.png";
+
+        // رفع الصورة أولاً إذا تم اختيار ملف
+        const fileInput = document.getElementById("bookCoverFile");
+        if (fileInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            const uploadRes = await fetch("/api/upload-cover", {
+                method: "POST",
+                headers: getAuthHeaders(false),
+                body: formData
+            });
+            if (!uploadRes.ok) return alert("فشل رفع صورة الغلاف (تأكد من تثبيت python-multipart).");
+            const uploadData = await uploadRes.json();
+            coverFilename = uploadData.filename;
+        }
+
+        const payload = {
+            title: document.getElementById("bookTitle").value.trim(),
+            author: document.getElementById("bookAuthor").value.trim(),
+            category: document.getElementById("bookCategory").value,
+            price: parseFloat(document.getElementById("bookPrice").value),
+            cover: coverFilename,
+            desc: document.getElementById("bookDesc").value.trim()
+        };
+
+        const res = await fetch("/api/books", {
+            method: "POST",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert("تمت إضافة الكتاب بنجاح!");
+            document.getElementById("addBookForm").reset();
+            loadAdminBooks();
+        } else {
+            alert("حدث خطأ أثناء إضافة الكتاب.");
+        }
+    }
+
+    async function saveBookPrice(bookId) {
+        const newPrice = parseFloat(document.getElementById(`price_${bookId}`).value);
+        if (isNaN(newPrice) || newPrice <= 0) return alert("أدخل سعراً صحيحاً");
+
+        const res = await fetch(`/api/books/${bookId}`, {
+            method: "PATCH",
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ price: newPrice })
+        });
+        if (res.ok) {
+            alert("تم تحديث السعر بنجاح!");
+            loadAdminBooks();
+        }
+    }
+
+    async function deleteBook(bookId, title) {
+        if (!confirm(`هل أنت متأكد من حذف كتاب "${title}"؟`)) return;
+        const res = await fetch(`/api/books/${bookId}`, {
+            method: "DELETE",
+            headers: getAuthHeaders()
+        });
+        if (res.ok) loadAdminBooks();
+    }
+
+    if (sessionStorage.getItem("admin_pass")) {
+        showDashboard();
+    }
+</script>
+
+</body>
+</html>

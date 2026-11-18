@@ -1,0 +1,434 @@
+:root {
+    --primary: #1e3a3d;        /* نفس درجة لون خلفية اللوجو بالظبط */
+    --primary-dark: #14282a;   /* درجة أغمق متناسقة للهيرو والفوتر */
+    --logo-gold: #f2cd98;      /* الذهبي الدافئ الخاص باللوجو */
+    --bg-color: #f9f6f0;       /* خلفية ورقية دافئة */
+    --text-color: #2b2b2b;
+    --muted: #777777;
+    --white: #ffffff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Cairo', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    direction: rtl;
+    text-align: right;
+}
+
+header {
+    background-color: var(--primary);
+    padding: 10px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+}
+
+.brand-logo-img {
+    height: 85px;              /* تكبير واضح للوجو مع الحفاظ على أبعاده */
+    width: auto;
+    object-fit: contain;
+    transition: transform 0.3s ease;
+}
+
+.brand-logo-img:hover {
+    transform: scale(1.05);
+}
+
+.search-bar input {
+    padding: 10px 18px;
+    width: 320px;
+    border-radius: 25px;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+}
+
+.cart-btn {
+    background-color: var(--logo-gold);
+    color: var(--primary-dark);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 25px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.cart-btn:hover {
+    opacity: 0.9;
+}
+
+.hero {
+    background-color: var(--primary-dark);
+    color: var(--white);
+    text-align: center;
+    padding: 35px 20px;
+}
+
+.hero h1 {
+    font-family: 'Amiri', serif;
+    font-size: 2.6rem;
+    color: var(--logo-gold);
+    margin-bottom: 10px;
+}
+
+.hero p {
+    color: #e0e0e0;
+    font-size: 1.1rem;
+}
+
+.categories {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 20px;
+    flex-wrap: wrap;
+    background: var(--white);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.cat-btn {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+    padding: 8px 18px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.cat-btn.active, .cat-btn:hover {
+    background: var(--primary);
+    color: var(--white);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.book-card {
+    background: var(--white);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.3s;
+}
+
+.book-card:hover {
+    transform: translateY(-5px);
+}
+
+.book-cover {
+    position: relative;
+    height: 280px;
+    background: #eee;
+}
+
+.book-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--primary);
+    color: var(--logo-gold);
+    padding: 3px 8px;
+    font-size: 0.75rem;
+    border-radius: 6px;
+}
+
+.book-info {
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.book-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+}
+
+.book-author {
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.book-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.price {
+    font-weight: 800;
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+.actions {
+    display: flex;
+    gap: 5px;
+}
+
+.btn-details {
+    background: #e2e8f0;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.btn-add {
+    background: var(--primary);
+    color: var(--white);
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal {
+    background: var(--white);
+    width: 90%;
+    max-width: 500px;
+    padding: 25px;
+    border-radius: 15px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    left: 15px;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--muted);
+}
+
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.qty-controls button {
+    background: #ddd;
+    border: none;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+footer {
+    background: var(--primary-dark);
+    color: var(--white);
+    text-align: center;
+    padding: 20px;
+    margin-top: 50px;
+    font-size: 0.9rem;
+}
+
+.footer-social {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.social-link {
+    color: var(--logo-gold);
+    font-weight: bold;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.3s ease;
+}
+
+.social-link:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+}
+
+.separator {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* =========================================
+   تنسيقات التجاوب مع الموبايل (Responsive)
+   ========================================= */
+
+@media (max-width: 768px) {
+    header {
+        flex-wrap: wrap;
+        gap: 12px;
+        padding: 10px 4%;
+    }
+
+    .brand-logo-img {
+        height: 60px;
+    }
+
+    .search-bar {
+        order: 3;
+        width: 100%;
+    }
+
+    .search-bar input {
+        width: 100%;
+        padding: 9px 15px;
+        font-size: 0.9rem;
+    }
+
+    .cart-btn {
+        padding: 8px 14px;
+        font-size: 0.9rem;
+    }
+
+    .hero {
+        padding: 25px 15px;
+    }
+
+    .hero h1 {
+        font-size: 1.9rem;
+    }
+
+    .hero p {
+        font-size: 0.95rem;
+    }
+
+    .categories {
+        padding: 12px 10px;
+        gap: 8px;
+    }
+
+    .cat-btn {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+
+    .container {
+        margin: 20px auto;
+        padding: 0 12px;
+    }
+
+    .books-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .book-cover {
+        height: 200px;
+    }
+
+    .book-info {
+        padding: 10px;
+        gap: 5px;
+    }
+
+    .book-title {
+        font-size: 0.92rem;
+    }
+
+    .book-author {
+        font-size: 0.78rem;
+    }
+
+    .book-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .btn-details, .btn-add {
+        flex: 1;
+        text-align: center;
+        padding: 6px 4px;
+        font-size: 0.75rem;
+    }
+
+    .modal {
+        width: 94%;
+        padding: 18px;
+    }
+
+    .footer-social {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .separator {
+        display: none;
+    }
+}
+
+@media (max-width: 380px) {
+    .books-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .book-cover {
+        height: 250px;
+    }
+}
