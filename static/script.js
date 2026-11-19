@@ -62,31 +62,25 @@ function renderBooks() {
     }
 
     booksGrid.innerHTML = books.map(book => {
-        const stock = book.stock !== undefined && book.stock !== null ? book.stock : 5;
-        const isOut = stock <= 0;
-        const lowStockTag = (!isOut && stock <= 2)
-            ? `<span style="display:inline-block; font-size:0.75rem; color:#d35400; font-weight:700; margin-bottom:6px;">🔥 متبقي ${stock} نسخة فقط</span>`
-            : "";
-
+        const isAvailable = book.is_available !== false;
         return `
-        <div class="book-card" style="${isOut ? 'opacity:0.82;' : ''}">
+        <div class="book-card" style="${!isAvailable ? 'opacity:0.82;' : ''}">
             <div class="book-cover">
-                <span class="badge" style="${isOut ? 'background:#c0392b; color:#fff;' : ''}">
-                    ${isOut ? 'نفدت الكمية' : book.category}
+                <span class="badge" style="${!isAvailable ? 'background:#c0392b; color:#fff;' : ''}">
+                    ${isAvailable ? book.category : 'غير متوفر'}
                 </span>
-                <img src="${book.cover}" alt="${book.title}" style="${isOut ? 'filter:grayscale(45%);' : ''}">
+                <img src="${book.cover}" alt="${book.title}" style="${!isAvailable ? 'filter:grayscale(45%);' : ''}">
             </div>
             <div class="book-info">
                 <h3 class="book-title">${book.title}</h3>
                 <p class="book-author">تأليف: ${book.author}</p>
-                ${lowStockTag}
                 <div class="book-footer">
                     <span class="price">${book.price} ج.م</span>
                     <div class="actions">
                         <button class="btn-details" onclick="showDetails(${book.id})">تفاصيل</button>
-                        ${isOut
-                            ? `<button class="btn-add" disabled style="background:#95a5a6; cursor:not-allowed;">غير متاح</button>`
-                            : `<button class="btn-add" onclick="addToCart(${book.id})">+ للسلة</button>`
+                        ${isAvailable
+                            ? `<button class="btn-add" onclick="addToCart(${book.id})">+ للسلة</button>`
+                            : `<button class="btn-add" disabled style="background:#95a5a6; cursor:not-allowed;">غير متوفر</button>`
                         }
                     </div>
                 </div>
@@ -112,9 +106,7 @@ document.getElementById("searchInput").addEventListener("input", (e) => {
 function showDetails(id) {
     const book = books.find(b => b.id === id);
     if (!book) return;
-
-    const stock = book.stock !== undefined && book.stock !== null ? book.stock : 5;
-    const isOut = stock <= 0;
+    const isAvailable = book.is_available !== false;
 
     document.getElementById("detailsContent").innerHTML = `
         <div style="display:flex; gap:20px; flex-wrap:wrap; align-items:center;">
@@ -123,15 +115,15 @@ function showDetails(id) {
                 <span style="background:var(--primary); color:var(--logo-gold); padding:3px 10px; border-radius:12px; font-size:0.8rem;">${book.category}</span>
                 <h2 style="margin:10px 0 5px; color:var(--primary-dark);">${book.title}</h2>
                 <p style="color:var(--muted); margin-bottom:6px;">المؤلف: <strong>${book.author}</strong></p>
-                <p style="font-size:0.85rem; margin-bottom:10px; color:${isOut ? '#c0392b' : '#27ae60'}; font-weight:700;">
-                    ${isOut ? '❌ نفدت الكمية حالياً' : `✅ متوفر في المخزن (${stock} نسخة)`}
+                <p style="font-size:0.85rem; margin-bottom:10px; color:${isAvailable ? '#27ae60' : '#c0392b'}; font-weight:700;">
+                    ${isAvailable ? '✅ متوفر حالياً' : '❌ غير متوفر حالياً'}
                 </p>
                 <p style="margin-bottom:15px;">${book.desc || ''}</p>
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <span class="price" style="font-size:1.4rem;">${book.price} ج.م</span>
-                    ${isOut
-                        ? `<button class="btn-add" disabled style="padding:10px 18px; background:#95a5a6; cursor:not-allowed;">غير متاح</button>`
-                        : `<button class="btn-add" style="padding:10px 18px;" onclick="addToCart(${book.id}); closeModal('detailsModal');">أضف إلى السلة</button>`
+                    ${isAvailable
+                        ? `<button class="btn-add" style="padding:10px 18px;" onclick="addToCart(${book.id}); closeModal('detailsModal');">أضف إلى السلة</button>`
+                        : `<button class="btn-add" disabled style="padding:10px 18px; background:#95a5a6; cursor:not-allowed;">غير متوفر</button>`
                     }
                 </div>
             </div>
@@ -143,18 +135,13 @@ function showDetails(id) {
 function addToCart(id) {
     const book = books.find(b => b.id === id);
     if (!book) return;
-    const available = book.stock !== undefined && book.stock !== null ? book.stock : 5;
-    if (available <= 0) return alert("عذراً، نفدت كمية هذا الكتاب.");
+    if (book.is_available === false) return alert("عذراً، هذا الكتاب غير متوفر حالياً.");
 
     const item = cart.find(i => i.id === id);
     if (item) {
-        if (item.qty + 1 > available) {
-            return alert(`عذراً، المتاح من "${book.title}" في المخزن هو ${available} نسخة فقط.`);
-        }
         item.qty++;
-        item.stock = available;
     } else {
-        cart.push({...book, stock: available, qty: 1});
+        cart.push({...book, qty: 1});
     }
     updateCartUI();
 }
@@ -162,11 +149,6 @@ function addToCart(id) {
 function changeQty(id, delta) {
     const item = cart.find(i => i.id === id);
     if (!item) return;
-
-    if (delta > 0 && item.stock !== undefined && item.qty + delta > item.stock) {
-        return alert(`عذراً، الحد الأقصى المتاح من "${item.title}" هو ${item.stock} نسخة.`);
-    }
-
     item.qty += delta;
     if (item.qty <= 0) {
         cart = cart.filter(i => i.id !== id);
@@ -231,7 +213,6 @@ function closeModal(id) {
     document.getElementById(id).style.display = "none";
 }
 
-// إرسال الطلب إلى FastAPI لحفظه في قاعدة البيانات وخصم المخزون
 async function checkout() {
     if (cart.length === 0) return alert("السلة فارغة!");
 
@@ -275,7 +256,7 @@ async function checkout() {
         const result = await response.json();
         if (!response.ok) {
             alert(result.detail || "حدث خطأ أثناء تسجيل الطلب");
-            fetchBooks(); // تحديث الكميات المعروضة فوراً
+            fetchBooks();
             return;
         }
 
@@ -290,7 +271,6 @@ async function checkout() {
         handlePaymentChange();
         updateCartUI();
         closeModal("cartModal");
-        fetchBooks(); // تحديث المخزون المعروض بعد الطلب مباشرة
     } catch (error) {
         console.error("Checkout error:", error);
         alert("تعذر إرسال الطلب للسيرفر، حاول مرة أخرى.");

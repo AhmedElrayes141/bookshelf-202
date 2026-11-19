@@ -9,7 +9,7 @@ from fastapi import FastAPI, Depends, HTTPException, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, text
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, Boolean, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 from seed_books import INITIAL_BOOKS
@@ -39,7 +39,7 @@ class BookDB(Base):
     author = Column(String, index=True, nullable=False)
     category = Column(String, index=True, nullable=False)
     price = Column(Float, nullable=False)
-    stock = Column(Integer, default=5, nullable=False)
+    is_available = Column(Boolean, default=True, nullable=False)
     desc = Column(Text, default="")
     cover = Column(Text, default="logo.png")
 
@@ -73,7 +73,7 @@ def init_db():
             for col_def in [
                 "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR DEFAULT 'الدفع عند الاستلام'",
                 "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR DEFAULT ''",
-                "ALTER TABLE books ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 5"
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE"
             ]:
                 try:
                     conn.execute(text(col_def))
@@ -92,7 +92,7 @@ def seed_database():
         if db.query(BookDB).count() == 0:
             for item in INITIAL_BOOKS:
                 book_data = {**item}
-                book_data.setdefault("stock", 5)
+                book_data.setdefault("is_available", True)
                 db.add(BookDB(**book_data))
             db.commit()
         settings = db.query(StoreSettingsDB).first()
@@ -123,7 +123,7 @@ class BookCreate(BaseModel):
     author: str
     category: str
     price: float
-    stock: int = 5
+    is_available: bool = True
     desc: Optional[str] = ""
     cover: Optional[str] = "logo.png"
 
@@ -133,7 +133,7 @@ class BookUpdate(BaseModel):
     author: Optional[str] = None
     category: Optional[str] = None
     price: Optional[float] = None
-    stock: Optional[int] = None
+    is_available: Optional[bool] = None
     desc: Optional[str] = None
 
 
@@ -224,23 +224,10 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     if not order.items:
         raise HTTPException(status_code=400, detail="السلة فارغة")
 
-    books_to_update = []
     for item in order.items:
         book = db.query(BookDB).filter(BookDB.id == item.id).first()
-        if not book:
-            raise HTTPException(status_code=404, detail=f"الكتاب '{item.title}' غير موجود حالياً.")
-        available = book.stock if book.stock is not None else 0
-        if available <= 0:
-            raise HTTPException(status_code=400, detail=f"عذراً، نفدت كمية كتاب '{book.title}' للتو.")
-        if item.qty > available:
-            raise HTTPException(
-                status_code=400,
-                detail=f"عذراً، المتاح حالياً من كتاب '{book.title}' هو {available} نسخة فقط."
-            )
-        books_to_update.append((book, item.qty))
-
-    for book, qty in books_to_update:
-        book.stock = (book.stock or 0) - qty
+        if book and book.is_available is False:
+            raise HTTPException(status_code=400, detail=f"عذراً، كتاب '{book.title}' غير متوفر حالياً.")
 
     items_data = [item.model_dump() for item in order.items]
     new_order = OrderDB(
@@ -313,22 +300,7 @@ def update_order_status(order_id: int, payload: OrderStatusUpdate, db: Session =
     order = db.query(OrderDB).filter(OrderDB.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="الطلب غير موجود")
-
-    old_status = order.status
-    new_status = payload.status
-
-    if old_status != "ملغي" and new_status == "ملغي":
-        for item in json.loads(order.items_json):
-            book = db.query(BookDB).filter(BookDB.id == item["id"]).first()
-            if book:
-                book.stock = (book.stock or 0) + item["qty"]
-    elif old_status == "ملغي" and new_status != "ملغي":
-        for item in json.loads(order.items_json):
-            book = db.query(BookDB).filter(BookDB.id == item["id"]).first()
-            if book:
-                book.stock = max(0, (book.stock or 0) - item["qty"])
-
-    order.status = new_status
+    order.status = payload.status
     db.commit()
     return {"message": "تم تحديث حالة الطلب"}
 
