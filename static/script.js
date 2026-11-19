@@ -221,13 +221,30 @@ async function checkout() {
     const customerAddress = document.getElementById("custAddress").value.trim();
     const paymentMethod = document.getElementById("paymentMethod").value;
     const paymentReference = document.getElementById("paymentReference").value.trim();
+    const screenshotInput = document.getElementById("paymentScreenshot");
 
     if (!customerName || !customerPhone || !customerAddress) {
         return alert("من فضلك أدخل الاسم ورقم الموبايل والعنوان لإتمام الطلب.");
     }
 
-    if (paymentMethod === "فودافون كاش" && !paymentReference) {
-        return alert("من فضلك اكتب رقم المحفظة التي قمت بالتحويل منها لتأكيد الدفع.");
+    let screenshotData = "";
+    if (paymentMethod === "فودافون كاش") {
+        if (!paymentReference && (!screenshotInput || screenshotInput.files.length === 0)) {
+            return alert("من فضلك اكتب رقم المحفظة المحوّل منها أو ارفع سكرين شوت التحويل.");
+        }
+        if (screenshotInput && screenshotInput.files.length > 0) {
+            const formData = new FormData();
+            formData.append("file", screenshotInput.files[0]);
+            const upRes = await fetch("/api/upload-receipt", {
+                method: "POST",
+                body: formData
+            });
+            const upData = await upRes.json();
+            if (!upRes.ok) {
+                return alert(upData.detail || "فشل رفع صورة التحويل، جرب صورة أصغر.");
+            }
+            screenshotData = upData.screenshot;
+        }
     }
 
     const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
@@ -237,6 +254,7 @@ async function checkout() {
         customer_address: customerAddress,
         payment_method: paymentMethod,
         payment_reference: paymentMethod === "الدفع عند الاستلام" ? "" : paymentReference,
+        payment_screenshot: paymentMethod === "الدفع عند الاستلام" ? "" : screenshotData,
         items: cart.map(item => ({
             id: item.id,
             title: item.title,
@@ -268,6 +286,7 @@ async function checkout() {
         document.getElementById("custAddress").value = "";
         document.getElementById("paymentMethod").value = "الدفع عند الاستلام";
         document.getElementById("paymentReference").value = "";
+        if (screenshotInput) screenshotInput.value = "";
         handlePaymentChange();
         updateCartUI();
         closeModal("cartModal");

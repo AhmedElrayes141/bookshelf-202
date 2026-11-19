@@ -52,6 +52,7 @@ class OrderDB(Base):
     customer_address = Column(String, default="")
     payment_method = Column(String, default="الدفع عند الاستلام")
     payment_reference = Column(String, default="")
+    payment_screenshot = Column(Text, default="")
     items_json = Column(Text, nullable=False)
     total_price = Column(Float, nullable=False)
     status = Column(String, default="قيد المراجعة")
@@ -73,6 +74,7 @@ def init_db():
             for col_def in [
                 "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR DEFAULT 'الدفع عند الاستلام'",
                 "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR DEFAULT ''",
+                "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_screenshot TEXT DEFAULT ''",
                 "ALTER TABLE books ADD COLUMN IF NOT EXISTS is_available BOOLEAN DEFAULT TRUE"
             ]:
                 try:
@@ -150,6 +152,7 @@ class OrderCreate(BaseModel):
     customer_address: Optional[str] = ""
     payment_method: Optional[str] = "الدفع عند الاستلام"
     payment_reference: Optional[str] = ""
+    payment_screenshot: Optional[str] = ""
     items: List[OrderItemSchema]
     total_price: float
 
@@ -219,6 +222,17 @@ def get_books(category: Optional[str] = None, search: Optional[str] = None, db: 
     return query.order_by(BookDB.id.desc()).all()
 
 
+@app.post("/api/upload-receipt")
+async def upload_receipt(file: UploadFile = File(...)):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="يرجى اختيار ملف صورة صالح")
+    content = await file.read()
+    if len(content) > 3 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="حجم الصورة كبير جداً (الحد الأقصى 3 ميجا)")
+    b64_str = base64.b64encode(content).decode("utf-8")
+    return {"screenshot": f"data:{file.content_type};base64,{b64_str}"}
+
+
 @app.post("/api/orders")
 def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     if not order.items:
@@ -236,6 +250,7 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         customer_address=order.customer_address,
         payment_method=order.payment_method or "الدفع عند الاستلام",
         payment_reference=order.payment_reference or "",
+        payment_screenshot=order.payment_screenshot or "",
         items_json=json.dumps(items_data, ensure_ascii=False),
         total_price=order.total_price
     )
@@ -287,6 +302,7 @@ def get_orders(db: Session = Depends(get_db)):
             "customer_address": o.customer_address,
             "payment_method": o.payment_method or "الدفع عند الاستلام",
             "payment_reference": o.payment_reference or "",
+            "payment_screenshot": o.payment_screenshot or "",
             "items": json.loads(o.items_json),
             "total_price": o.total_price,
             "status": o.status,

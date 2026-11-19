@@ -70,7 +70,8 @@
             <input type="text" id="custAddress" placeholder="العنوان بالتفصيل (المحافظة - المدينة - الشارع) *"
                    style="padding:10px; border:1px solid #ccc; border-radius:8px; font-family:inherit;">
 
-            <label style="font-weight:700; font-size:0.9rem; color:var(--primary-dark); margin-top:4px;">💳 اختر طريقة الدفع:</label>
+            <label style="font-weight:700; font-size:0.9rem; color:var(--primary-dark); margin-top:4px;">💳 اختر طريقة
+                الدفع:</label>
             <select id="paymentMethod" onchange="handlePaymentChange()"
                     style="padding:10px; border:1px solid #ccc; border-radius:8px; font-family:inherit; background:#fff;">
                 <option value="الدفع عند الاستلام">💵 الدفع عند الاستلام (كاش)</option>
@@ -78,16 +79,27 @@
             </select>
 
             <!-- صندوق تفاصيل فودافون كاش -->
-            <div id="onlinePaymentBox" style="display:none; background:#f9f6f0; border:1.5px solid #e60000; border-radius:10px; padding:12px;">
-                <p style="font-weight:700; color:#1e3a3d; margin-bottom:6px; font-size:0.92rem;">📱 حوّل المبلغ على رقم فودافون كاش التالي:</p>
+            <div id="onlinePaymentBox"
+                 style="display:none; background:#f9f6f0; border:1.5px solid #e60000; border-radius:10px; padding:12px;">
+                <p style="font-weight:700; color:#1e3a3d; margin-bottom:6px; font-size:0.92rem;">📱 حوّل المبلغ على رقم
+                    فودافون كاش التالي:</p>
                 <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border-radius:8px; border:1px dashed #e60000; margin-bottom:10px;">
-                    <strong id="paymentAccountDisplay" dir="ltr" style="font-size:1.05rem; color:#14282a;">01097897941</strong>
-                    <button type="button" onclick="copyPaymentAccount()" style="background:#1e3a3d; color:#f2cd98; border:none; padding:5px 12px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.82rem; font-weight:700;">
+                    <strong id="paymentAccountDisplay" dir="ltr"
+                            style="font-size:1.05rem; color:#14282a;">01097897941</strong>
+                    <button type="button" onclick="copyPaymentAccount()"
+                            style="background:#1e3a3d; color:#f2cd98; border:none; padding:5px 12px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.82rem; font-weight:700;">
                         نسخ الرقم 📋
                     </button>
                 </div>
                 <input type="tel" id="paymentReference" placeholder="اكتب رقم المحفظة اللي حوّلت منها للتأكيد *"
                        style="width:100%; padding:9px; border:1px solid #ccc; border-radius:8px; font-family:inherit; font-size:0.9rem; direction:rtl;">
+                <div style="margin-top:10px;">
+                    <label style="display:block; font-size:0.85rem; font-weight:700; margin-bottom:4px; color:#1e3a3d;">
+                        📸 صورة إيصال التحويل (سكرين شوت):
+                    </label>
+                    <input type="file" id="paymentScreenshot" accept="image/*"
+                           style="background:#fff; padding:6px; border:1px dashed #1e3a3d; border-radius:6px; width:100%;">
+                </div>
             </div>
         </div>
 

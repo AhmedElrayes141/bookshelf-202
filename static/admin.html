@@ -388,6 +388,7 @@
                 <td>
                     <span class="pay-badge">${o.payment_method || "الدفع عند الاستلام"}</span>
                     ${o.payment_reference ? `<div style="font-size:0.8rem; color:#555; margin-top:4px;">من: <strong>${o.payment_reference}</strong></div>` : ""}
+                    ${o.payment_screenshot ? `<div style="margin-top:6px;"><a href="${o.payment_screenshot}" target="_blank" style="display:inline-block; background:#1e3a3d; color:#f2cd98; padding:3px 9px; border-radius:6px; font-size:0.78rem; text-decoration:none; font-weight:700;">🖼️ عرض السكرين شوت</a></div>` : ""}
                 </td>
                 <td><strong>${o.total_price} ج.م</strong></td>
                 <td dir="ltr" style="text-align:right; font-size:0.8rem;">${o.created_at}</td>
