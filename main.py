@@ -23,7 +23,7 @@ if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
+engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
@@ -66,23 +66,24 @@ class StoreSettingsDB(Base):
     store_address = Column(Text, default=DEFAULT_ADDRESS)
 
 
-Base.metadata.create_all(bind=engine)
+def init_db():
+    try:
+        Base.metadata.create_all(bind=engine)
+        with engine.begin() as conn:
+            for col_def in [
+                "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR DEFAULT 'الدفع عند الاستلام'",
+                "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR DEFAULT ''",
+                "ALTER TABLE books ADD COLUMN IF NOT EXISTS stock INTEGER DEFAULT 5"
+            ]:
+                try:
+                    conn.execute(text(col_def))
+                except Exception:
+                    pass
+    except Exception as e:
+        print("DB init warning:", e)
 
 
-def run_migrations():
-    with engine.begin() as conn:
-        for col_def in [
-            "ALTER TABLE orders ADD COLUMN payment_method VARCHAR DEFAULT 'الدفع عند الاستلام'",
-            "ALTER TABLE orders ADD COLUMN payment_reference VARCHAR DEFAULT ''",
-            "ALTER TABLE books ADD COLUMN stock INTEGER DEFAULT 5"
-        ]:
-            try:
-                conn.execute(text(col_def))
-            except Exception:
-                pass
-
-
-run_migrations()
+init_db()
 
 
 def seed_database():
@@ -107,6 +108,8 @@ def seed_database():
             settings.vodafone_cash = DEFAULT_VODAFONE
             settings.store_address = DEFAULT_ADDRESS
             db.commit()
+    except Exception as e:
+        print("Seed warning:", e)
     finally:
         db.close()
 
@@ -221,10 +224,9 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     if not order.items:
         raise HTTPException(status_code=400, detail="السلة فارغة")
 
-    # التحقق من توافر الكمية في المخزن لكل كتاب قبل تسجيل الطلب
     books_to_update = []
     for item in order.items:
-        book = db.query(BookDB).filter(BookDB.id == item.id).with_for_update().first()
+        book = db.query(BookDB).filter(BookDB.id == item.id).first()
         if not book:
             raise HTTPException(status_code=404, detail=f"الكتاب '{item.title}' غير موجود حالياً.")
         available = book.stock if book.stock is not None else 0
@@ -237,7 +239,6 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
             )
         books_to_update.append((book, item.qty))
 
-    # خصم الكميات المحجوزة من المخزن
     for book, qty in books_to_update:
         book.stock = (book.stock or 0) - qty
 
@@ -316,13 +317,11 @@ def update_order_status(order_id: int, payload: OrderStatusUpdate, db: Session =
     old_status = order.status
     new_status = payload.status
 
-    # إعادة الكميات للمخزون تلقائياً إذا تم إلغاء الطلب
     if old_status != "ملغي" and new_status == "ملغي":
         for item in json.loads(order.items_json):
             book = db.query(BookDB).filter(BookDB.id == item["id"]).first()
             if book:
                 book.stock = (book.stock or 0) + item["qty"]
-    # خصم الكميات مرة أخرى إذا تم التراجع عن الإلغاء
     elif old_status == "ملغي" and new_status != "ملغي":
         for item in json.loads(order.items_json):
             book = db.query(BookDB).filter(BookDB.id == item["id"]).first()
