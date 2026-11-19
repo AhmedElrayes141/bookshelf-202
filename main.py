@@ -23,9 +23,12 @@ if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+DEFAULT_VODAFONE = "01097897941"
+DEFAULT_ADDRESS = 'دمنهور - ش عبد السلام الشاذلي (أسفل الكوبري العلوي - أول ش مدرسة الفكرية) | دسوق - "شارع الجيش"'
 
 
 # --- نماذج قاعدة البيانات ---
@@ -57,15 +60,14 @@ class OrderDB(Base):
 class StoreSettingsDB(Base):
     __tablename__ = "store_settings"
     id = Column(Integer, primary_key=True, index=True)
-    vodafone_cash = Column(String, default="01000000000")
-    instapay = Column(String, default="bookshelf202@instapay")
-    store_address = Column(String, default="مصر - متاح التوصيل لجميع المحافظات")
+    vodafone_cash = Column(String, default=DEFAULT_VODAFONE)
+    instapay = Column(String, default="")
+    store_address = Column(Text, default=DEFAULT_ADDRESS)
 
 
 Base.metadata.create_all(bind=engine)
 
 
-# تحديث آمن لجدول الطلبات الحالي لإضافة أعمدة الدفع دون فقدان البيانات
 def run_migrations():
     with engine.begin() as conn:
         for col_def in [
@@ -88,13 +90,18 @@ def seed_database():
             for item in INITIAL_BOOKS:
                 db.add(BookDB(**item))
             db.commit()
-        if db.query(StoreSettingsDB).count() == 0:
+        settings = db.query(StoreSettingsDB).first()
+        if not settings:
             db.add(StoreSettingsDB(
                 id=1,
-                vodafone_cash="01000000000",
-                instapay="bookshelf202@instapay",
-                store_address="مصر - متاح التوصيل لجميع المحافظات"
+                vodafone_cash=DEFAULT_VODAFONE,
+                instapay="",
+                store_address=DEFAULT_ADDRESS
             ))
+            db.commit()
+        elif settings.vodafone_cash == "01000000000":
+            settings.vodafone_cash = DEFAULT_VODAFONE
+            settings.store_address = DEFAULT_ADDRESS
             db.commit()
     finally:
         db.close()
@@ -148,7 +155,6 @@ class AdminLogin(BaseModel):
 
 class StoreSettingsUpdate(BaseModel):
     vodafone_cash: str
-    instapay: str
     store_address: str
 
 
@@ -184,14 +190,12 @@ def get_store_settings(db: Session = Depends(get_db)):
     settings = db.query(StoreSettingsDB).first()
     if not settings:
         return {
-            "vodafone_cash": "01000000000",
-            "instapay": "bookshelf202@instapay",
-            "store_address": "مصر - متاح التوصيل لجميع المحافظات"
+            "vodafone_cash": DEFAULT_VODAFONE,
+            "store_address": DEFAULT_ADDRESS
         }
     return {
-        "vodafone_cash": settings.vodafone_cash,
-        "instapay": settings.instapay,
-        "store_address": settings.store_address
+        "vodafone_cash": settings.vodafone_cash or DEFAULT_VODAFONE,
+        "store_address": settings.store_address or DEFAULT_ADDRESS
     }
 
 
@@ -242,7 +246,6 @@ def update_store_settings(payload: StoreSettingsUpdate, db: Session = Depends(ge
         settings = StoreSettingsDB(id=1)
         db.add(settings)
     settings.vodafone_cash = payload.vodafone_cash.strip()
-    settings.instapay = payload.instapay.strip()
     settings.store_address = payload.store_address.strip()
     db.commit()
     return {"message": "تم حفظ إعدادات المتجر بنجاح"}

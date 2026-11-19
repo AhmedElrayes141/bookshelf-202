@@ -25,6 +25,11 @@
 <section class="hero">
     <h1>رف الكتب</h1>
     <p>نختار لك ما يستحق وقتك، لا ما تملأ به رفوفك.</p>
+    <div style="margin-top: 14px; display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 10px; background: rgba(20, 40, 42, 0.75); border: 1px solid rgba(242, 205, 152, 0.45); padding: 8px 18px; border-radius: 25px; font-size: 0.88rem; color: #f2cd98;">
+        <span>📍 <strong>فرع دمنهور:</strong> ش عبد السلام الشاذلي</span>
+        <span style="opacity: 0.5;">|</span>
+        <span>📍 <strong>فرع دسوق:</strong> شارع الجيش</span>
+    </div>
 </section>
 
 <div class="categories" id="categoryButtons">
@@ -70,20 +75,19 @@
                     style="padding:10px; border:1px solid #ccc; border-radius:8px; font-family:inherit; background:#fff;">
                 <option value="الدفع عند الاستلام">💵 الدفع عند الاستلام (كاش)</option>
                 <option value="فودافون كاش">📱 فودافون كاش (Vodafone Cash)</option>
-                <option value="إنستاباي">🏦 إنستاباي (InstaPay)</option>
             </select>
 
-            <!-- صندوق تفاصيل الدفع الأونلاين -->
-            <div id="onlinePaymentBox" style="display:none; background:#f9f6f0; border:1.5px solid #d4af37; border-radius:10px; padding:12px;">
-                <p id="paymentInstructionTitle" style="font-weight:700; color:#1e3a3d; margin-bottom:6px; font-size:0.92rem;"></p>
-                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border-radius:8px; border:1px dashed #1e3a3d; margin-bottom:10px;">
-                    <strong id="paymentAccountDisplay" dir="ltr" style="font-size:1rem; color:#14282a;"></strong>
+            <!-- صندوق تفاصيل فودافون كاش -->
+            <div id="onlinePaymentBox" style="display:none; background:#f9f6f0; border:1.5px solid #e60000; border-radius:10px; padding:12px;">
+                <p style="font-weight:700; color:#1e3a3d; margin-bottom:6px; font-size:0.92rem;">📱 حوّل المبلغ على رقم فودافون كاش التالي:</p>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border-radius:8px; border:1px dashed #e60000; margin-bottom:10px;">
+                    <strong id="paymentAccountDisplay" dir="ltr" style="font-size:1.05rem; color:#14282a;">01097897941</strong>
                     <button type="button" onclick="copyPaymentAccount()" style="background:#1e3a3d; color:#f2cd98; border:none; padding:5px 12px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.82rem; font-weight:700;">
-                        نسخ 📋
+                        نسخ الرقم 📋
                     </button>
                 </div>
-                <input type="text" id="paymentReference" placeholder="اكتب الرقم أو اسم الحساب المحوّل منه للتأكيد *"
-                       style="width:100%; padding:9px; border:1px solid #ccc; border-radius:8px; font-family:inherit; font-size:0.9rem;">
+                <input type="tel" id="paymentReference" placeholder="اكتب رقم المحفظة اللي حوّلت منها للتأكيد *"
+                       style="width:100%; padding:9px; border:1px solid #ccc; border-radius:8px; font-family:inherit; font-size:0.9rem; direction:rtl;">
             </div>
         </div>
 
@@ -95,8 +99,9 @@
 </div>
 
 <footer>
-    <div id="footerAddressBox" style="margin-bottom: 10px; font-size: 0.92rem; color: #f2cd98;">
-        📍 <span id="storeAddressText">مصر - متاح التوصيل لجميع المحافظات</span>
+    <div id="footerAddressBox" style="margin-bottom: 14px; font-size: 0.92rem; color: #f2cd98; line-height: 1.8;">
+        <div>📍 <strong>العنوان:</strong> دمنهور - ش عبد السلام الشاذلي (أسفل الكوبري العلوي - أول ش مدرسة الفكرية)</div>
+        <div>📍 <strong>فرع دسوق:</strong> شارع الجيش</div>
     </div>
     <div class="footer-social">
         <a href="https://wa.me/201201585059?text=%D8%A3%D9%87%D9%84%D8%A7%D9%8B%20%D8%A8%D8%AD%D8%B6%D8%B1%D8%AA%D9%83%D8%8C%20%D8%AD%D8%A7%D8%A8%D8%A8%20%D8%A3%D8%B3%D8%AA%D9%81%D8%B3%D8%B1%20%D9%88%D8%A3%D8%AD%D8%AC%D8%B2%20%D9%83%D8%AA%D8%A8%20%D9%85%D9%86%20%D9%85%D8%AA%D8%AC%D8%B1%20%D8%B1%D9%81%20%D8%A7%D9%84%D9%83%D8%AA%D8%A8."

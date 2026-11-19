@@ -3,22 +3,20 @@ let currentCategory = "رعب";
 let searchQuery = "";
 let cart = [];
 let storeSettings = {
-    vodafone_cash: "01000000000",
-    instapay: "bookshelf202@instapay",
-    store_address: "مصر - متاح التوصيل لجميع المحافظات"
+    vodafone_cash: "01097897941",
+    store_address: 'دمنهور - ش عبد السلام الشاذلي (أسفل الكوبري العلوي - أول ش مدرسة الفكرية) | دسوق - "شارع الجيش"'
 };
 
 const booksGrid = document.getElementById("booksGrid");
 
-// جلب إعدادات المتجر (أرقام الدفع والعنوان)
+// جلب إعدادات المتجر (رقم فودافون كاش والعنوان)
 async function fetchStoreSettings() {
     try {
         const res = await fetch("/api/settings");
         if (res.ok) {
             storeSettings = await res.json();
-            const addrEl = document.getElementById("storeAddressText");
-            if (addrEl && storeSettings.store_address) {
-                addrEl.textContent = storeSettings.store_address;
+            if (storeSettings.vodafone_cash) {
+                document.getElementById("paymentAccountDisplay").textContent = storeSettings.vodafone_cash;
             }
         }
     } catch (e) {
@@ -26,21 +24,34 @@ async function fetchStoreSettings() {
     }
 }
 
-// جلب الكتب من FastAPI API
-async function fetchBooks() {
-    try {
-        const params = new URLSearchParams();
-        if (currentCategory) params.append("category", currentCategory);
-        if (searchQuery) params.append("search", searchQuery);
+// جلب الكتب من FastAPI API مع إعادة المحاولة التلقائية لو السيرفر في وضع السكون
+async function fetchBooks(retries = 2) {
+    booksGrid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:40px; color:var(--muted);">⏳ جاري تحميل الكتب...</p>`;
 
-        const response = await fetch(`/api/books?${params.toString()}`);
-        if (!response.ok) throw new Error("فشل الاتصال بالسيرفر");
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            const params = new URLSearchParams();
+            if (currentCategory) params.append("category", currentCategory);
+            if (searchQuery) params.append("search", searchQuery);
 
-        books = await response.json();
-        renderBooks();
-    } catch (error) {
-        console.error("Error fetching books:", error);
-        booksGrid.innerHTML = `<p style="grid-column:1/-1; text-align:center; padding:40px; color:#c0392b;">تعذر تحميل الكتب. تأكد من تشغيل سيرفر FastAPI.</p>`;
+            const response = await fetch(`/api/books?${params.toString()}`);
+            if (!response.ok) throw new Error("فشل الاتصال بالسيرفر");
+
+            books = await response.json();
+            renderBooks();
+            return;
+        } catch (error) {
+            if (attempt < retries) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            } else {
+                console.error("Error fetching books:", error);
+                booksGrid.innerHTML = `
+                    <div style="grid-column:1/-1; text-align:center; padding:40px;">
+                        <p style="color:#c0392b; margin-bottom:12px;">تعذر تحميل الكتب حالياً، السيرفر يستيقظ من وضع السكون.</p>
+                        <button class="btn-add" onclick="fetchBooks()" style="padding:8px 18px;">إعادة المحاولة ↻</button>
+                    </div>`;
+            }
+        }
     }
 }
 
@@ -158,17 +169,11 @@ function updateCartUI() {
 function handlePaymentChange() {
     const method = document.getElementById("paymentMethod").value;
     const box = document.getElementById("onlinePaymentBox");
-    const titleEl = document.getElementById("paymentInstructionTitle");
     const accEl = document.getElementById("paymentAccountDisplay");
 
     if (method === "فودافون كاش") {
         box.style.display = "block";
-        titleEl.textContent = "حوّل المبلغ على رقم فودافون كاش التالي:";
-        accEl.textContent = storeSettings.vodafone_cash || "غير محدد";
-    } else if (method === "إنستاباي") {
-        box.style.display = "block";
-        titleEl.textContent = "حوّل المبلغ على حساب إنستاباي (InstaPay) التالي:";
-        accEl.textContent = storeSettings.instapay || "غير محدد";
+        accEl.textContent = storeSettings.vodafone_cash || "01097897941";
     } else {
         box.style.display = "none";
     }
@@ -177,7 +182,7 @@ function handlePaymentChange() {
 function copyPaymentAccount() {
     const text = document.getElementById("paymentAccountDisplay").textContent;
     navigator.clipboard.writeText(text).then(() => {
-        alert("تم نسخ الرقم: " + text);
+        alert("تم نسخ رقم فودافون كاش: " + text);
     });
 }
 
@@ -205,8 +210,8 @@ async function checkout() {
         return alert("من فضلك أدخل الاسم ورقم الموبايل والعنوان لإتمام الطلب.");
     }
 
-    if (paymentMethod !== "الدفع عند الاستلام" && !paymentReference) {
-        return alert("من فضلك اكتب الرقم أو اسم الحساب الذي قمت بالتحويل منه لتأكيد الدفع.");
+    if (paymentMethod === "فودافون كاش" && !paymentReference) {
+        return alert("من فضلك اكتب رقم المحفظة التي قمت بالتحويل منها لتأكيد الدفع.");
     }
 
     const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);

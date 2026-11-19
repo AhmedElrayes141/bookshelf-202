@@ -108,7 +108,7 @@
             grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
             gap: 12px;
         }
-        input, select {
+        input, select, textarea {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 8px;
@@ -183,7 +183,7 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('ordersTab', this)">📦 إدارة الطلبات</button>
             <button class="tab-btn" onclick="switchTab('booksTab', this)">📚 إدارة الكتب والمخزون</button>
-            <button class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ إعدادات الدفع والعنوان</button>
+            <button class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ إعدادات فودافون كاش والعنوان</button>
         </div>
 
         <!-- تبويب الطلبات -->
@@ -259,22 +259,18 @@
             </div>
         </div>
 
-        <!-- تبويب إعدادات الدفع والعنوان -->
+        <!-- تبويب إعدادات فودافون كاش والعنوان -->
         <div id="settingsTab" class="card" style="display: none;">
-            <h2>⚙️ بيانات الدفع الأونلاين وعنوان المتجر</h2>
-            <p style="color:#666; font-size:0.9rem; margin-bottom:18px;">تظهر هذه البيانات للعملاء في صفحة السلة عند اختيار الدفع الإلكتروني، كما يظهر العنوان أسفل المتجر.</p>
-            <form onsubmit="saveStoreSettings(event)" style="display:flex; flex-direction:column; gap:14px; max-width:550px;">
+            <h2>⚙️ بيانات فودافون كاش وعنوان الفروع</h2>
+            <p style="color:#666; font-size:0.9rem; margin-bottom:18px;">يمكنك تحديث رقم محفظة فودافون كاش أو عناوين الفروع من هنا في أي وقت.</p>
+            <form onsubmit="saveStoreSettings(event)" style="display:flex; flex-direction:column; gap:14px; max-width:580px;">
                 <div>
                     <label style="display:block; font-weight:700; margin-bottom:5px;">📱 رقم محفظة فودافون كاش:</label>
-                    <input type="text" id="setVodafone" placeholder="مثال: 01012345678" dir="ltr" style="text-align:right;" required>
+                    <input type="text" id="setVodafone" value="01097897941" dir="ltr" style="text-align:right;" required>
                 </div>
                 <div>
-                    <label style="display:block; font-weight:700; margin-bottom:5px;">🏦 حساب أو رقم إنستاباي (InstaPay):</label>
-                    <input type="text" id="setInstapay" placeholder="مثال: username@instapay أو رقم الموبايل" dir="ltr" style="text-align:right;" required>
-                </div>
-                <div>
-                    <label style="display:block; font-weight:700; margin-bottom:5px;">📍 عنوان المتجر / منطقة التوصيل:</label>
-                    <input type="text" id="setAddress" placeholder="مثال: القاهرة - مدينة نصر / متاح الشحن لجميع المحافظات" required>
+                    <label style="display:block; font-weight:700; margin-bottom:5px;">📍 عناوين الفروع:</label>
+                    <textarea id="setAddress" rows="3" required>دمنهور - ش عبد السلام الشاذلي (أسفل الكوبري العلوي - أول ش مدرسة الفكرية) | دسوق - "شارع الجيش"</textarea>
                 </div>
                 <button type="submit" class="btn-success" style="padding:12px; font-size:1rem; width:fit-content;">💾 حفظ الإعدادات</button>
             </form>
@@ -333,8 +329,7 @@
         const res = await fetch("/api/settings");
         if (res.ok) {
             const data = await res.json();
-            document.getElementById("setVodafone").value = data.vodafone_cash || "";
-            document.getElementById("setInstapay").value = data.instapay || "";
+            document.getElementById("setVodafone").value = data.vodafone_cash || "01097897941";
             document.getElementById("setAddress").value = data.store_address || "";
         }
     }
@@ -343,7 +338,6 @@
         e.preventDefault();
         const payload = {
             vodafone_cash: document.getElementById("setVodafone").value.trim(),
-            instapay: document.getElementById("setInstapay").value.trim(),
             store_address: document.getElementById("setAddress").value.trim()
         };
         const res = await fetch("/api/admin/settings", {
@@ -353,7 +347,7 @@
         });
         if (res.status === 401) return logout();
         if (res.ok) {
-            alert("تم تحديث أرقام الدفع والعنوان بنجاح!");
+            alert("تم تحديث رقم فودافون كاش والعنوان بنجاح!");
         } else {
             alert("حدث خطأ أثناء حفظ الإعدادات.");
         }
