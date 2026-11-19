@@ -39,6 +39,7 @@ class BookDB(Base):
     author = Column(String, index=True, nullable=False)
     category = Column(String, index=True, nullable=False)
     price = Column(Float, nullable=False)
+    stock = Column(Integer, default=5, nullable=False)
     desc = Column(Text, default="")
     cover = Column(Text, default="logo.png")
 
@@ -72,7 +73,8 @@ def run_migrations():
     with engine.begin() as conn:
         for col_def in [
             "ALTER TABLE orders ADD COLUMN payment_method VARCHAR DEFAULT 'الدفع عند الاستلام'",
-            "ALTER TABLE orders ADD COLUMN payment_reference VARCHAR DEFAULT ''"
+            "ALTER TABLE orders ADD COLUMN payment_reference VARCHAR DEFAULT ''",
+            "ALTER TABLE books ADD COLUMN stock INTEGER DEFAULT 5"
         ]:
             try:
                 conn.execute(text(col_def))
@@ -88,7 +90,9 @@ def seed_database():
     try:
         if db.query(BookDB).count() == 0:
             for item in INITIAL_BOOKS:
-                db.add(BookDB(**item))
+                book_data = {**item}
+                book_data.setdefault("stock", 5)
+                db.add(BookDB(**book_data))
             db.commit()
         settings = db.query(StoreSettingsDB).first()
         if not settings:
@@ -116,6 +120,7 @@ class BookCreate(BaseModel):
     author: str
     category: str
     price: float
+    stock: int = 5
     desc: Optional[str] = ""
     cover: Optional[str] = "logo.png"
 
@@ -125,6 +130,7 @@ class BookUpdate(BaseModel):
     author: Optional[str] = None
     category: Optional[str] = None
     price: Optional[float] = None
+    stock: Optional[int] = None
     desc: Optional[str] = None
 
 
@@ -215,6 +221,26 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
     if not order.items:
         raise HTTPException(status_code=400, detail="السلة فارغة")
 
+    # التحقق من توافر الكمية في المخزن لكل كتاب قبل تسجيل الطلب
+    books_to_update = []
+    for item in order.items:
+        book = db.query(BookDB).filter(BookDB.id == item.id).with_for_update().first()
+        if not book:
+            raise HTTPException(status_code=404, detail=f"الكتاب '{item.title}' غير موجود حالياً.")
+        available = book.stock if book.stock is not None else 0
+        if available <= 0:
+            raise HTTPException(status_code=400, detail=f"عذراً، نفدت كمية كتاب '{book.title}' للتو.")
+        if item.qty > available:
+            raise HTTPException(
+                status_code=400,
+                detail=f"عذراً، المتاح حالياً من كتاب '{book.title}' هو {available} نسخة فقط."
+            )
+        books_to_update.append((book, item.qty))
+
+    # خصم الكميات المحجوزة من المخزن
+    for book, qty in books_to_update:
+        book.stock = (book.stock or 0) - qty
+
     items_data = [item.model_dump() for item in order.items]
     new_order = OrderDB(
         customer_name=order.customer_name,
@@ -286,7 +312,24 @@ def update_order_status(order_id: int, payload: OrderStatusUpdate, db: Session =
     order = db.query(OrderDB).filter(OrderDB.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="الطلب غير موجود")
-    order.status = payload.status
+
+    old_status = order.status
+    new_status = payload.status
+
+    # إعادة الكميات للمخزون تلقائياً إذا تم إلغاء الطلب
+    if old_status != "ملغي" and new_status == "ملغي":
+        for item in json.loads(order.items_json):
+            book = db.query(BookDB).filter(BookDB.id == item["id"]).first()
+            if book:
+                book.stock = (book.stock or 0) + item["qty"]
+    # خصم الكميات مرة أخرى إذا تم التراجع عن الإلغاء
+    elif old_status == "ملغي" and new_status != "ملغي":
+        for item in json.loads(order.items_json):
+            book = db.query(BookDB).filter(BookDB.id == item["id"]).first()
+            if book:
+                book.stock = max(0, (book.stock or 0) - item["qty"])
+
+    order.status = new_status
     db.commit()
     return {"message": "تم تحديث حالة الطلب"}
 

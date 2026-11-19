@@ -67,7 +67,7 @@
         /* بطاقات الإحصائيات */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
             gap: 18px;
             margin-bottom: 25px;
         }
@@ -105,7 +105,7 @@
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
         }
         input, select, textarea {
@@ -130,7 +130,7 @@
         .btn-success { background: var(--success); }
 
         .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 900px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 950px; }
         th, td { padding: 11px; text-align: right; border-bottom: 1px solid #eee; font-size: 0.9rem; vertical-align: middle; }
         th { background: var(--primary); color: var(--gold); }
         tr:hover { background: #fafafa; }
@@ -138,6 +138,8 @@
         .items-list { list-style: none; padding: 0; }
         .items-list li { margin-bottom: 3px; font-size: 0.85rem; }
         .pay-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; background: #eef6f7; color: #1e3a3d; }
+        .stock-badge-out { background: #fdecea; color: #c0392b; padding: 2px 7px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; }
+        .stock-badge-low { background: #fef5e7; color: #d35400; padding: 2px 7px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -174,8 +176,12 @@
                 <h3 id="statTotalSales">0 ج.م</h3>
             </div>
             <div class="stat-card">
-                <span>عدد الكتب في المتجر</span>
+                <span>عناوين الكتب / إجمالي النسخ</span>
                 <h3 id="statBooksCount">0</h3>
+            </div>
+            <div class="stat-card" style="border-right-color: var(--danger);">
+                <span>كتب نفدت من المخزون</span>
+                <h3 id="statOutOfStock" style="color: var(--danger);">0</h3>
             </div>
         </div>
 
@@ -213,7 +219,7 @@
             </div>
         </div>
 
-        <!-- تبويب الكتب -->
+        <!-- تبويب الكتب والمخزون -->
         <div id="booksTab" style="display: none;">
             <div class="card">
                 <h2>➕ إضافة كتاب جديد</h2>
@@ -229,6 +235,7 @@
                         <option value="علم نفس وتنمية">علم نفس وتنمية بشرية</option>
                     </select>
                     <input type="number" id="bookPrice" placeholder="السعر بالجنيه *" required>
+                    <input type="number" id="bookStock" placeholder="الكمية في المخزن *" min="0" value="5" required>
                     <input type="file" id="bookCoverFile" accept="image/*" title="اختر صورة غلاف الكتاب">
                     <input type="text" id="bookDesc" placeholder="وصف مختصر للكتاب">
                     <button type="submit">حفظ الكتاب +</button>
@@ -237,8 +244,15 @@
 
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
-                    <h2 style="margin:0;">قائمة الكتب المتاحة</h2>
-                    <input type="text" id="adminBookSearch" placeholder="ابحث باسم الكتاب أو المؤلف..." oninput="filterAdminBooks()" style="max-width: 280px;">
+                    <h2 style="margin:0;">قائمة الكتب والمخزون</h2>
+                    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                        <select id="adminStockFilter" onchange="filterAdminBooks()" style="width:auto;">
+                            <option value="all">كل الكتب</option>
+                            <option value="out">نفدت الكمية (0)</option>
+                            <option value="low">مخزون منخفض (1 - 2)</option>
+                        </select>
+                        <input type="text" id="adminBookSearch" placeholder="ابحث باسم الكتاب أو المؤلف..." oninput="filterAdminBooks()" style="max-width: 260px;">
+                    </div>
                 </div>
                 <div class="table-wrap">
                     <table>
@@ -250,6 +264,7 @@
                                 <th>المؤلف</th>
                                 <th>القسم</th>
                                 <th>السعر (ج.م)</th>
+                                <th>المخزون (نسخة)</th>
                                 <th>إجراءات</th>
                             </tr>
                         </thead>
@@ -392,7 +407,7 @@
                         <option value="جاري التجهيز" ${o.status === "جاري التجهيز" ? "selected" : ""}>جاري التجهيز</option>
                         <option value="خرج للتوصيل" ${o.status === "خرج للتوصيل" ? "selected" : ""}>خرج للتوصيل</option>
                         <option value="تم التسليم" ${o.status === "تم التسليم" ? "selected" : ""}>تم التسليم</option>
-                        <option value="ملغي" ${o.status === "ملغي" ? "selected" : ""}>ملغي</option>
+                        <option value="ملغي" ${o.status === "ملغي" ? "selected" : ""}>ملغي (إرجاع للمخزن)</option>
                     </select>
                 </td>
                 <td>
@@ -410,6 +425,7 @@
         });
         if (res.status === 401) return logout();
         loadOrders();
+        loadAdminBooks();
     }
 
     async function deleteOrder(orderId) {
@@ -421,37 +437,61 @@
         if (res.ok) loadOrders();
     }
 
-    // --- إدارة الكتب ---
+    // --- إدارة الكتب والمخزون ---
     async function loadAdminBooks() {
         const res = await fetch("/api/books");
         allBooks = await res.json();
-        document.getElementById("statBooksCount").textContent = allBooks.length;
-        renderAdminBooks(allBooks);
+        const totalCopies = allBooks.reduce((s, b) => s + (b.stock ?? 5), 0);
+        const outCount = allBooks.filter(b => (b.stock ?? 5) <= 0).length;
+
+        document.getElementById("statBooksCount").textContent = `${allBooks.length} (${totalCopies} نسخة)`;
+        document.getElementById("statOutOfStock").textContent = outCount;
+        filterAdminBooks();
     }
 
     function renderAdminBooks(list) {
         const tbody = document.getElementById("booksBody");
-        tbody.innerHTML = list.map(b => `
-            <tr>
+        tbody.innerHTML = list.map(b => {
+            const stock = b.stock !== undefined && b.stock !== null ? b.stock : 5;
+            let statusBadge = "";
+            if (stock <= 0) statusBadge = `<span class="stock-badge-out">نفدت الكمية</span>`;
+            else if (stock <= 2) statusBadge = `<span class="stock-badge-low">قرب يخلص</span>`;
+
+            return `
+            <tr style="${stock <= 0 ? 'background:#fff8f8;' : ''}">
                 <td>${b.id}</td>
                 <td><img src="${b.cover}" class="book-thumb" alt="${b.title}"></td>
-                <td><strong>${b.title}</strong></td>
+                <td>
+                    <strong>${b.title}</strong>
+                    <div>${statusBadge}</div>
+                </td>
                 <td>${b.author}</td>
                 <td>${b.category}</td>
                 <td>
-                    <input type="number" id="price_${b.id}" value="${b.price}" style="width: 85px; padding: 5px;">
+                    <input type="number" id="price_${b.id}" value="${b.price}" style="width: 80px; padding: 5px;">
+                </td>
+                <td>
+                    <input type="number" id="stock_${b.id}" value="${stock}" min="0" style="width: 75px; padding: 5px; font-weight:bold; border-color:${stock <= 0 ? '#c0392b' : '#ccc'};">
                 </td>
                 <td style="display:flex; gap:6px;">
-                    <button class="btn-sm btn-success" onclick="saveBookPrice(${b.id})">حفظ السعر</button>
+                    <button class="btn-sm btn-success" onclick="saveBookChanges(${b.id})">حفظ</button>
                     <button class="btn-sm btn-danger" onclick="deleteBook(${b.id}, '${b.title}')">حذف</button>
                 </td>
             </tr>
-        `).join("");
+        `}).join("");
     }
 
     function filterAdminBooks() {
         const q = document.getElementById("adminBookSearch").value.trim().toLowerCase();
-        const filtered = allBooks.filter(b => b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q));
+        const stockFilter = document.getElementById("adminStockFilter").value;
+
+        const filtered = allBooks.filter(b => {
+            const matchesText = b.title.toLowerCase().includes(q) || b.author.toLowerCase().includes(q);
+            const stock = b.stock !== undefined && b.stock !== null ? b.stock : 5;
+            if (stockFilter === "out") return matchesText && stock <= 0;
+            if (stockFilter === "low") return matchesText && stock > 0 && stock <= 2;
+            return matchesText;
+        });
         renderAdminBooks(filtered);
     }
 
@@ -478,6 +518,7 @@
             author: document.getElementById("bookAuthor").value.trim(),
             category: document.getElementById("bookCategory").value,
             price: parseFloat(document.getElementById("bookPrice").value),
+            stock: parseInt(document.getElementById("bookStock").value, 10) || 0,
             cover: coverFilename,
             desc: document.getElementById("bookDesc").value.trim()
         };
@@ -489,25 +530,29 @@
         });
 
         if (res.ok) {
-            alert("تمت إضافة الكتاب بنجاح!");
+            alert("تمت إضافة الكتاب والمخزون بنجاح!");
             document.getElementById("addBookForm").reset();
+            document.getElementById("bookStock").value = "5";
             loadAdminBooks();
         } else {
             alert("حدث خطأ أثناء إضافة الكتاب.");
         }
     }
 
-    async function saveBookPrice(bookId) {
+    async function saveBookChanges(bookId) {
         const newPrice = parseFloat(document.getElementById(`price_${bookId}`).value);
+        const newStock = parseInt(document.getElementById(`stock_${bookId}`).value, 10);
+
         if (isNaN(newPrice) || newPrice <= 0) return alert("أدخل سعراً صحيحاً");
+        if (isNaN(newStock) || newStock < 0) return alert("أدخل كمية صحيحة (0 أو أكثر)");
 
         const res = await fetch(`/api/books/${bookId}`, {
             method: "PATCH",
             headers: getAuthHeaders(),
-            body: JSON.stringify({ price: newPrice })
+            body: JSON.stringify({ price: newPrice, stock: newStock })
         });
         if (res.ok) {
-            alert("تم تحديث السعر بنجاح!");
+            alert("تم تحديث السعر والمخزون بنجاح!");
             loadAdminBooks();
         }
     }
