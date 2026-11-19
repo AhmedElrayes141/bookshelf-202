@@ -130,13 +130,14 @@
         .btn-success { background: var(--success); }
 
         .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 800px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 900px; }
         th, td { padding: 11px; text-align: right; border-bottom: 1px solid #eee; font-size: 0.9rem; vertical-align: middle; }
         th { background: var(--primary); color: var(--gold); }
         tr:hover { background: #fafafa; }
         .book-thumb { width: 45px; height: 62px; object-fit: cover; border-radius: 4px; }
         .items-list { list-style: none; padding: 0; }
         .items-list li { margin-bottom: 3px; font-size: 0.85rem; }
+        .pay-badge { display: inline-block; padding: 3px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 700; background: #eef6f7; color: #1e3a3d; }
     </style>
 </head>
 <body>
@@ -182,6 +183,7 @@
         <div class="tabs">
             <button class="tab-btn active" onclick="switchTab('ordersTab', this)">📦 إدارة الطلبات</button>
             <button class="tab-btn" onclick="switchTab('booksTab', this)">📚 إدارة الكتب والمخزون</button>
+            <button class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ إعدادات الدفع والعنوان</button>
         </div>
 
         <!-- تبويب الطلبات -->
@@ -199,6 +201,7 @@
                             <th>الموبايل (واتساب)</th>
                             <th>العنوان</th>
                             <th>الكتب المطلوبة</th>
+                            <th>طريقة الدفع</th>
                             <th>الإجمالي</th>
                             <th>التوقيت</th>
                             <th>الحالة</th>
@@ -212,7 +215,6 @@
 
         <!-- تبويب الكتب -->
         <div id="booksTab" style="display: none;">
-            <!-- إضافة كتاب جديد -->
             <div class="card">
                 <h2>➕ إضافة كتاب جديد</h2>
                 <form id="addBookForm" class="form-grid" onsubmit="addBook(event)">
@@ -233,7 +235,6 @@
                 </form>
             </div>
 
-            <!-- جدول الكتب الموجودة -->
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
                     <h2 style="margin:0;">قائمة الكتب المتاحة</h2>
@@ -256,6 +257,27 @@
                     </table>
                 </div>
             </div>
+        </div>
+
+        <!-- تبويب إعدادات الدفع والعنوان -->
+        <div id="settingsTab" class="card" style="display: none;">
+            <h2>⚙️ بيانات الدفع الأونلاين وعنوان المتجر</h2>
+            <p style="color:#666; font-size:0.9rem; margin-bottom:18px;">تظهر هذه البيانات للعملاء في صفحة السلة عند اختيار الدفع الإلكتروني، كما يظهر العنوان أسفل المتجر.</p>
+            <form onsubmit="saveStoreSettings(event)" style="display:flex; flex-direction:column; gap:14px; max-width:550px;">
+                <div>
+                    <label style="display:block; font-weight:700; margin-bottom:5px;">📱 رقم محفظة فودافون كاش:</label>
+                    <input type="text" id="setVodafone" placeholder="مثال: 01012345678" dir="ltr" style="text-align:right;" required>
+                </div>
+                <div>
+                    <label style="display:block; font-weight:700; margin-bottom:5px;">🏦 حساب أو رقم إنستاباي (InstaPay):</label>
+                    <input type="text" id="setInstapay" placeholder="مثال: username@instapay أو رقم الموبايل" dir="ltr" style="text-align:right;" required>
+                </div>
+                <div>
+                    <label style="display:block; font-weight:700; margin-bottom:5px;">📍 عنوان المتجر / منطقة التوصيل:</label>
+                    <input type="text" id="setAddress" placeholder="مثال: القاهرة - مدينة نصر / متاح الشحن لجميع المحافظات" required>
+                </div>
+                <button type="submit" class="btn-success" style="padding:12px; font-size:1rem; width:fit-content;">💾 حفظ الإعدادات</button>
+            </form>
         </div>
     </div>
 </div>
@@ -295,13 +317,46 @@
         document.getElementById("dashboardContent").style.display = "block";
         loadOrders();
         loadAdminBooks();
+        loadStoreSettings();
     }
 
     function switchTab(tabId, btn) {
         document.getElementById("ordersTab").style.display = tabId === "ordersTab" ? "block" : "none";
         document.getElementById("booksTab").style.display = tabId === "booksTab" ? "block" : "none";
+        document.getElementById("settingsTab").style.display = tabId === "settingsTab" ? "block" : "none";
         document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         btn.classList.add("active");
+    }
+
+    // --- إدارة إعدادات المتجر ---
+    async function loadStoreSettings() {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById("setVodafone").value = data.vodafone_cash || "";
+            document.getElementById("setInstapay").value = data.instapay || "";
+            document.getElementById("setAddress").value = data.store_address || "";
+        }
+    }
+
+    async function saveStoreSettings(e) {
+        e.preventDefault();
+        const payload = {
+            vodafone_cash: document.getElementById("setVodafone").value.trim(),
+            instapay: document.getElementById("setInstapay").value.trim(),
+            store_address: document.getElementById("setAddress").value.trim()
+        };
+        const res = await fetch("/api/admin/settings", {
+            method: "PUT",
+            headers: getAuthHeaders(),
+            body: JSON.stringify(payload)
+        });
+        if (res.status === 401) return logout();
+        if (res.ok) {
+            alert("تم تحديث أرقام الدفع والعنوان بنجاح!");
+        } else {
+            alert("حدث خطأ أثناء حفظ الإعدادات.");
+        }
     }
 
     // --- إدارة الطلبات ---
@@ -316,7 +371,7 @@
 
         const tbody = document.getElementById("ordersBody");
         if (orders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; padding:25px;">لا توجد طلبات مسجلة حتى الآن.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center; padding:25px;">لا توجد طلبات مسجلة حتى الآن.</td></tr>`;
             return;
         }
 
@@ -330,6 +385,10 @@
                     <ul class="items-list">
                         ${o.items.map(i => `<li>• ${i.title} (${i.qty} × ${i.price} ج.م)</li>`).join("")}
                     </ul>
+                </td>
+                <td>
+                    <span class="pay-badge">${o.payment_method || "الدفع عند الاستلام"}</span>
+                    ${o.payment_reference ? `<div style="font-size:0.8rem; color:#555; margin-top:4px;">من: <strong>${o.payment_reference}</strong></div>` : ""}
                 </td>
                 <td><strong>${o.total_price} ج.م</strong></td>
                 <td dir="ltr" style="text-align:right; font-size:0.8rem;">${o.created_at}</td>
@@ -406,7 +465,6 @@
         e.preventDefault();
         let coverFilename = "logo.png";
 
-        // رفع الصورة أولاً إذا تم اختيار ملف
         const fileInput = document.getElementById("bookCoverFile");
         if (fileInput.files.length > 0) {
             const formData = new FormData();
@@ -416,7 +474,7 @@
                 headers: getAuthHeaders(false),
                 body: formData
             });
-            if (!uploadRes.ok) return alert("فشل رفع صورة الغلاف (تأكد من تثبيت python-multipart).");
+            if (!uploadRes.ok) return alert("فشل رفع صورة الغلاف.");
             const uploadData = await uploadRes.json();
             coverFilename = uploadData.filename;
         }

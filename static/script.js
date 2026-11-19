@@ -2,8 +2,29 @@ let books = [];
 let currentCategory = "رعب";
 let searchQuery = "";
 let cart = [];
+let storeSettings = {
+    vodafone_cash: "01000000000",
+    instapay: "bookshelf202@instapay",
+    store_address: "مصر - متاح التوصيل لجميع المحافظات"
+};
 
 const booksGrid = document.getElementById("booksGrid");
+
+// جلب إعدادات المتجر (أرقام الدفع والعنوان)
+async function fetchStoreSettings() {
+    try {
+        const res = await fetch("/api/settings");
+        if (res.ok) {
+            storeSettings = await res.json();
+            const addrEl = document.getElementById("storeAddressText");
+            if (addrEl && storeSettings.store_address) {
+                addrEl.textContent = storeSettings.store_address;
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching settings:", e);
+    }
+}
 
 // جلب الكتب من FastAPI API
 async function fetchBooks() {
@@ -134,8 +155,35 @@ function updateCartUI() {
     `).join("");
 }
 
+function handlePaymentChange() {
+    const method = document.getElementById("paymentMethod").value;
+    const box = document.getElementById("onlinePaymentBox");
+    const titleEl = document.getElementById("paymentInstructionTitle");
+    const accEl = document.getElementById("paymentAccountDisplay");
+
+    if (method === "فودافون كاش") {
+        box.style.display = "block";
+        titleEl.textContent = "حوّل المبلغ على رقم فودافون كاش التالي:";
+        accEl.textContent = storeSettings.vodafone_cash || "غير محدد";
+    } else if (method === "إنستاباي") {
+        box.style.display = "block";
+        titleEl.textContent = "حوّل المبلغ على حساب إنستاباي (InstaPay) التالي:";
+        accEl.textContent = storeSettings.instapay || "غير محدد";
+    } else {
+        box.style.display = "none";
+    }
+}
+
+function copyPaymentAccount() {
+    const text = document.getElementById("paymentAccountDisplay").textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        alert("تم نسخ الرقم: " + text);
+    });
+}
+
 function openCart() {
     updateCartUI();
+    handlePaymentChange();
     document.getElementById("cartModal").style.display = "flex";
 }
 
@@ -150,9 +198,15 @@ async function checkout() {
     const customerName = document.getElementById("custName").value.trim();
     const customerPhone = document.getElementById("custPhone").value.trim();
     const customerAddress = document.getElementById("custAddress").value.trim();
+    const paymentMethod = document.getElementById("paymentMethod").value;
+    const paymentReference = document.getElementById("paymentReference").value.trim();
 
     if (!customerName || !customerPhone || !customerAddress) {
         return alert("من فضلك أدخل الاسم ورقم الموبايل والعنوان لإتمام الطلب.");
+    }
+
+    if (paymentMethod !== "الدفع عند الاستلام" && !paymentReference) {
+        return alert("من فضلك اكتب الرقم أو اسم الحساب الذي قمت بالتحويل منه لتأكيد الدفع.");
     }
 
     const total = cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
@@ -160,6 +214,8 @@ async function checkout() {
         customer_name: customerName,
         customer_phone: customerPhone,
         customer_address: customerAddress,
+        payment_method: paymentMethod,
+        payment_reference: paymentMethod === "الدفع عند الاستلام" ? "" : paymentReference,
         items: cart.map(item => ({
             id: item.id,
             title: item.title,
@@ -185,6 +241,9 @@ async function checkout() {
         document.getElementById("custName").value = "";
         document.getElementById("custPhone").value = "";
         document.getElementById("custAddress").value = "";
+        document.getElementById("paymentMethod").value = "الدفع عند الاستلام";
+        document.getElementById("paymentReference").value = "";
+        handlePaymentChange();
         updateCartUI();
         closeModal("cartModal");
     } catch (error) {
@@ -192,4 +251,6 @@ async function checkout() {
         alert("تعذر إرسال الطلب للسيرفر، حاول مرة أخرى.");
     }
 }
+
+fetchStoreSettings();
 fetchBooks();

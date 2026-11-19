@@ -51,12 +51,12 @@
 
 <!-- نافذة سلة المشتريات -->
 <div class="overlay" id="cartModal">
-    <div class="modal">
+    <div class="modal" style="max-height: 90vh; overflow-y: auto;">
         <button class="close-btn" onclick="closeModal('cartModal')">×</button>
         <h2 style="margin-bottom:15px; color:var(--primary-dark);">🛒 سلة المشتريات</h2>
         <div id="cartItems"></div>
 
-        <!-- بيانات التوصيل -->
+        <!-- بيانات التوصيل وطريقة الدفع -->
         <div style="margin-top:15px; display:flex; flex-direction:column; gap:10px; border-top:1px solid #eee; padding-top:15px;">
             <input type="text" id="custName" placeholder="الاسم بالكامل *"
                    style="padding:10px; border:1px solid #ccc; border-radius:8px; font-family:inherit;">
@@ -64,6 +64,27 @@
                    style="padding:10px; border:1px solid #ccc; border-radius:8px; font-family:inherit; direction:rtl;">
             <input type="text" id="custAddress" placeholder="العنوان بالتفصيل (المحافظة - المدينة - الشارع) *"
                    style="padding:10px; border:1px solid #ccc; border-radius:8px; font-family:inherit;">
+
+            <label style="font-weight:700; font-size:0.9rem; color:var(--primary-dark); margin-top:4px;">💳 اختر طريقة الدفع:</label>
+            <select id="paymentMethod" onchange="handlePaymentChange()"
+                    style="padding:10px; border:1px solid #ccc; border-radius:8px; font-family:inherit; background:#fff;">
+                <option value="الدفع عند الاستلام">💵 الدفع عند الاستلام (كاش)</option>
+                <option value="فودافون كاش">📱 فودافون كاش (Vodafone Cash)</option>
+                <option value="إنستاباي">🏦 إنستاباي (InstaPay)</option>
+            </select>
+
+            <!-- صندوق تفاصيل الدفع الأونلاين -->
+            <div id="onlinePaymentBox" style="display:none; background:#f9f6f0; border:1.5px solid #d4af37; border-radius:10px; padding:12px;">
+                <p id="paymentInstructionTitle" style="font-weight:700; color:#1e3a3d; margin-bottom:6px; font-size:0.92rem;"></p>
+                <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border-radius:8px; border:1px dashed #1e3a3d; margin-bottom:10px;">
+                    <strong id="paymentAccountDisplay" dir="ltr" style="font-size:1rem; color:#14282a;"></strong>
+                    <button type="button" onclick="copyPaymentAccount()" style="background:#1e3a3d; color:#f2cd98; border:none; padding:5px 12px; border-radius:6px; cursor:pointer; font-family:inherit; font-size:0.82rem; font-weight:700;">
+                        نسخ 📋
+                    </button>
+                </div>
+                <input type="text" id="paymentReference" placeholder="اكتب الرقم أو اسم الحساب المحوّل منه للتأكيد *"
+                       style="width:100%; padding:9px; border:1px solid #ccc; border-radius:8px; font-family:inherit; font-size:0.9rem;">
+            </div>
         </div>
 
         <div style="margin-top:20px; display:flex; justify-content:space-between; align-items:center;">
@@ -74,6 +95,9 @@
 </div>
 
 <footer>
+    <div id="footerAddressBox" style="margin-bottom: 10px; font-size: 0.92rem; color: #f2cd98;">
+        📍 <span id="storeAddressText">مصر - متاح التوصيل لجميع المحافظات</span>
+    </div>
     <div class="footer-social">
         <a href="https://wa.me/201201585059?text=%D8%A3%D9%87%D9%84%D8%A7%D9%8B%20%D8%A8%D8%AD%D8%B6%D8%B1%D8%AA%D9%83%D8%8C%20%D8%AD%D8%A7%D8%A8%D8%A8%20%D8%A3%D8%B3%D8%AA%D9%81%D8%B3%D8%B1%20%D9%88%D8%A3%D8%AD%D8%AC%D8%B2%20%D9%83%D8%AA%D8%A8%20%D9%85%D9%86%20%D9%85%D8%AA%D8%AC%D8%B1%20%D8%B1%D9%81%20%D8%A7%D9%84%D9%83%D8%AA%D8%A8."
            target="_blank" class="social-link">

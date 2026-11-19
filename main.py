@@ -9,15 +9,15 @@ from fastapi import FastAPI, Depends, HTTPException, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, text
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 from seed_books import INITIAL_BOOKS
 
-# كلمة مرور لوحة التحكم (يقرأها من السيرفر أو يستخدم الافتراضية)
+# كلمة مرور لوحة التحكم
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "bookshelf2026")
 
-# قراءة رابط قاعدة البيانات (PostgreSQL أونلاين أو SQLite محلياً)
+# قراءة رابط قاعدة البيانات
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./bookshelf.db")
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -37,7 +37,7 @@ class BookDB(Base):
     category = Column(String, index=True, nullable=False)
     price = Column(Float, nullable=False)
     desc = Column(Text, default="")
-    cover = Column(Text, default="logo.png")  # Text لدعم روابط الصور أو Base64
+    cover = Column(Text, default="logo.png")
 
 
 class OrderDB(Base):
@@ -46,13 +46,39 @@ class OrderDB(Base):
     customer_name = Column(String, default="عميل المتجر")
     customer_phone = Column(String, default="")
     customer_address = Column(String, default="")
+    payment_method = Column(String, default="الدفع عند الاستلام")
+    payment_reference = Column(String, default="")
     items_json = Column(Text, nullable=False)
     total_price = Column(Float, nullable=False)
     status = Column(String, default="قيد المراجعة")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class StoreSettingsDB(Base):
+    __tablename__ = "store_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    vodafone_cash = Column(String, default="01000000000")
+    instapay = Column(String, default="bookshelf202@instapay")
+    store_address = Column(String, default="مصر - متاح التوصيل لجميع المحافظات")
+
+
 Base.metadata.create_all(bind=engine)
+
+
+# تحديث آمن لجدول الطلبات الحالي لإضافة أعمدة الدفع دون فقدان البيانات
+def run_migrations():
+    with engine.begin() as conn:
+        for col_def in [
+            "ALTER TABLE orders ADD COLUMN payment_method VARCHAR DEFAULT 'الدفع عند الاستلام'",
+            "ALTER TABLE orders ADD COLUMN payment_reference VARCHAR DEFAULT ''"
+        ]:
+            try:
+                conn.execute(text(col_def))
+            except Exception:
+                pass
+
+
+run_migrations()
 
 
 def seed_database():
@@ -61,6 +87,14 @@ def seed_database():
         if db.query(BookDB).count() == 0:
             for item in INITIAL_BOOKS:
                 db.add(BookDB(**item))
+            db.commit()
+        if db.query(StoreSettingsDB).count() == 0:
+            db.add(StoreSettingsDB(
+                id=1,
+                vodafone_cash="01000000000",
+                instapay="bookshelf202@instapay",
+                store_address="مصر - متاح التوصيل لجميع المحافظات"
+            ))
             db.commit()
     finally:
         db.close()
@@ -98,6 +132,8 @@ class OrderCreate(BaseModel):
     customer_name: Optional[str] = "عميل المتجر"
     customer_phone: Optional[str] = ""
     customer_address: Optional[str] = ""
+    payment_method: Optional[str] = "الدفع عند الاستلام"
+    payment_reference: Optional[str] = ""
     items: List[OrderItemSchema]
     total_price: float
 
@@ -108,6 +144,12 @@ class OrderStatusUpdate(BaseModel):
 
 class AdminLogin(BaseModel):
     password: str
+
+
+class StoreSettingsUpdate(BaseModel):
+    vodafone_cash: str
+    instapay: str
+    store_address: str
 
 
 # --- تطبيق FastAPI ---
@@ -137,6 +179,22 @@ def verify_admin(x_admin_password: Optional[str] = Header(None)):
 
 
 # --- مسارات عامة للعملاء ---
+@app.get("/api/settings")
+def get_store_settings(db: Session = Depends(get_db)):
+    settings = db.query(StoreSettingsDB).first()
+    if not settings:
+        return {
+            "vodafone_cash": "01000000000",
+            "instapay": "bookshelf202@instapay",
+            "store_address": "مصر - متاح التوصيل لجميع المحافظات"
+        }
+    return {
+        "vodafone_cash": settings.vodafone_cash,
+        "instapay": settings.instapay,
+        "store_address": settings.store_address
+    }
+
+
 @app.get("/api/books")
 def get_books(category: Optional[str] = None, search: Optional[str] = None, db: Session = Depends(get_db)):
     query = db.query(BookDB)
@@ -158,6 +216,8 @@ def create_order(order: OrderCreate, db: Session = Depends(get_db)):
         customer_name=order.customer_name,
         customer_phone=order.customer_phone,
         customer_address=order.customer_address,
+        payment_method=order.payment_method or "الدفع عند الاستلام",
+        payment_reference=order.payment_reference or "",
         items_json=json.dumps(items_data, ensure_ascii=False),
         total_price=order.total_price
     )
@@ -175,7 +235,19 @@ def admin_login(data: AdminLogin):
     return {"message": "تم تسجيل الدخول بنجاح"}
 
 
-# تحويل الصورة المرفوعة إلى Base64 لحفظها في قاعدة البيانات السحابية بشكل دائم
+@app.put("/api/admin/settings", dependencies=[Depends(verify_admin)])
+def update_store_settings(payload: StoreSettingsUpdate, db: Session = Depends(get_db)):
+    settings = db.query(StoreSettingsDB).first()
+    if not settings:
+        settings = StoreSettingsDB(id=1)
+        db.add(settings)
+    settings.vodafone_cash = payload.vodafone_cash.strip()
+    settings.instapay = payload.instapay.strip()
+    settings.store_address = payload.store_address.strip()
+    db.commit()
+    return {"message": "تم حفظ إعدادات المتجر بنجاح"}
+
+
 @app.post("/api/upload-cover", dependencies=[Depends(verify_admin)])
 async def upload_cover(file: UploadFile = File(...)):
     content = await file.read()
@@ -196,6 +268,8 @@ def get_orders(db: Session = Depends(get_db)):
             "customer_name": o.customer_name,
             "customer_phone": o.customer_phone,
             "customer_address": o.customer_address,
+            "payment_method": o.payment_method or "الدفع عند الاستلام",
+            "payment_reference": o.payment_reference or "",
             "items": json.loads(o.items_json),
             "total_price": o.total_price,
             "status": o.status,
