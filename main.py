@@ -331,14 +331,31 @@ def delete_order(order_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "تم حذف الطلب"}
 
-
 @app.post("/api/books", dependencies=[Depends(verify_admin)])
 def create_book(book: BookCreate, db: Session = Depends(get_db)):
-    new_book = BookDB(**book.model_dump())
-    db.add(new_book)
-    db.commit()
-    db.refresh(new_book)
-    return new_book
+    try:
+        new_book = BookDB(**book.model_dump())
+        db.add(new_book)
+        db.commit()
+        db.refresh(new_book)
+        return new_book
+    except Exception as exc:
+        db.rollback()
+        try:
+            db.execute(text(
+                "SELECT setval(pg_get_serial_sequence('books', 'id'), "
+                "COALESCE((SELECT MAX(id) FROM books), 1), true)"
+            ))
+            db.commit()
+            new_book = BookDB(**book.model_dump())
+            db.add(new_book)
+            db.commit()
+            db.refresh(new_book)
+            return new_book
+        except Exception as retry_exc:
+            db.rollback()
+            print("create_book error:", exc, "| retry error:", retry_exc)
+            raise HTTPException(status_code=500, detail=f"فشل حفظ الكتاب: {exc}")
 
 
 @app.patch("/api/books/{book_id}", dependencies=[Depends(verify_admin)])
