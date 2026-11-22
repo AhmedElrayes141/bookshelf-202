@@ -7,50 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@700&family=Cairo:wght@400;600;700;800&display=swap"
           rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <style>
-        .welcome-actions {
-            margin-top: 22px;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-        }
-        .welcome-btn-primary {
-            background: #f2cd98;
-            color: #14282a;
-            border: none;
-            padding: 11px 24px;
-            border-radius: 25px;
-            font-family: inherit;
-            font-weight: 800;
-            font-size: 0.95rem;
-            cursor: pointer;
-            transition: transform 0.2s ease, opacity 0.2s ease;
-        }
-        .welcome-btn-primary:hover {
-            transform: translateY(-2px);
-            opacity: 0.95;
-        }
-        .welcome-btn-secondary {
-            background: rgba(20, 40, 42, 0.8);
-            color: #f2cd98;
-            border: 1px solid rgba(242, 205, 152, 0.55);
-            padding: 11px 20px;
-            border-radius: 25px;
-            font-family: inherit;
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: transform 0.2s ease, background 0.2s ease;
-        }
-        .welcome-btn-secondary:hover {
-            transform: translateY(-2px);
-            background: rgba(30, 58, 61, 0.95);
-        }
-        .storefront-section {
-            scroll-margin-top: 20px;
-        }
-    </style>
 </head>
 <body>
 
@@ -74,40 +30,21 @@
         <span style="opacity: 0.5;">|</span>
         <span>📍 <strong>فرع دسوق:</strong> شارع الجيش</span>
     </div>
-
-    <div class="welcome-actions">
-        <button type="button" class="welcome-btn-primary" onclick="goToStorefront()">
-            تصفح الأقسام والكتب 📚
-        </button>
-        <button type="button" class="welcome-btn-secondary" onclick="selectCategoryAndScroll('رعب')">
-            رعب
-        </button>
-        <button type="button" class="welcome-btn-secondary" onclick="selectCategoryAndScroll('رومانسية')">
-            رومانسية
-        </button>
-        <button type="button" class="welcome-btn-secondary" onclick="selectCategoryAndScroll('دينية')">
-            قرآن وكتب دينية
-        </button>
-        <button type="button" class="welcome-btn-secondary" onclick="selectCategoryAndScroll('علم نفس وتنمية')">
-            علم نفس وتنمية
-        </button>
-    </div>
 </section>
 
-<div id="storefrontStart" class="storefront-section">
-    <div class="categories" id="categoryButtons">
-        <button class="cat-btn active" data-cat="رعب">رعب</button>
-        <button class="cat-btn" data-cat="رومانسية">رومانسية</button>
-        <button class="cat-btn" data-cat="مغامرة">مغامرة</button>
-        <button class="cat-btn" data-cat="دينية">قرآن وكتب دينية</button>
-        <button class="cat-btn" data-cat="غموض وجريمة">غموض وجريمة</button>
-        <button class="cat-btn" data-cat="علم نفس وتنمية">علم نفس وتنمية بشرية</button>
-    </div>
-
-    <main class="container">
-        <div class="books-grid" id="booksGrid"></div>
-    </main>
+<div class="categories" id="categoryButtons">
+    <button class="cat-btn active" data-cat="">الكل</button>
+    <button class="cat-btn" data-cat="رعب">رعب</button>
+    <button class="cat-btn" data-cat="رومانسية">رومانسية</button>
+    <button class="cat-btn" data-cat="مغامرة">مغامرة</button>
+    <button class="cat-btn" data-cat="دينية">قرآن وكتب دينية</button>
+    <button class="cat-btn" data-cat="غموض وجريمة">غموض وجريمة</button>
+    <button class="cat-btn" data-cat="علم نفس وتنمية">علم نفس وتنمية بشرية</button>
 </div>
+
+<main class="container">
+    <div class="books-grid" id="booksGrid"></div>
+</main>
 
 <!-- نافذة تفاصيل الكتاب -->
 <div class="overlay" id="detailsModal">
@@ -201,28 +138,6 @@
     </div>
 </footer>
 
-<script>
-    function goToStorefront() {
-        const target = document.getElementById("storefrontStart");
-        if (target) {
-            target.scrollIntoView({ behavior: "smooth" });
-        }
-    }
-
-    function selectCategoryAndScroll(catName) {
-        const buttons = document.querySelectorAll("#categoryButtons .cat-btn");
-        let matchedBtn = null;
-        buttons.forEach((btn) => {
-            if (btn.getAttribute("data-cat") === catName) {
-                matchedBtn = btn;
-            }
-        });
-        if (matchedBtn) {
-            matchedBtn.click();
-        }
-        goToStorefront();
-    }
-</script>
 <script src="script.js"></script>
 
 </body>

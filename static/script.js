@@ -1,5 +1,5 @@
 let books = [];
-let currentCategory = "رعب";
+let currentCategory = "";
 let searchQuery = "";
 let cart = [];
 let storeSettings = {
