@@ -136,6 +136,7 @@ class BookUpdate(BaseModel):
     category: Optional[str] = None
     price: Optional[float] = None
     is_available: Optional[bool] = None
+    cover: Optional[str] = None
     desc: Optional[str] = None
 
 
