@@ -9,6 +9,52 @@ let storeSettings = {
 
 const booksGrid = document.getElementById("booksGrid");
 
+// ضغط صورة إيصال التحويل في المتصفح قبل الرفع لتقليل الحجم وتسريع الإرسال من الموبايل
+function compressReceiptImage(file, maxWidth = 850, quality = 0.72) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+
+                const canvas = document.createElement("canvas");
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(
+                    (blob) => {
+                        if (!blob) {
+                            reject(new Error("تعذر ضغط صورة الإيصال"));
+                            return;
+                        }
+                        const compressedFile = new File([blob], "receipt.jpg", {
+                            type: "image/jpeg",
+                            lastModified: Date.now()
+                        });
+                        resolve(compressedFile);
+                    },
+                    "image/jpeg",
+                    quality
+                );
+            };
+            img.onerror = () => reject(new Error("تعذر قراءة ملف الصورة"));
+            img.src = event.target.result;
+        };
+        reader.onerror = () => reject(new Error("تعذر فتح ملف الصورة"));
+        reader.readAsDataURL(file);
+    });
+}
+
 // جلب إعدادات المتجر (رقم فودافون كاش والعنوان)
 async function fetchStoreSettings() {
     try {
@@ -233,8 +279,15 @@ async function checkout() {
             return alert("من فضلك اكتب رقم المحفظة المحوّل منها أو ارفع سكرين شوت التحويل.");
         }
         if (screenshotInput && screenshotInput.files.length > 0) {
+            let fileToUpload = screenshotInput.files[0];
+            try {
+                fileToUpload = await compressReceiptImage(fileToUpload);
+            } catch (compErr) {
+                console.warn("Receipt compression fallback:", compErr);
+            }
+
             const formData = new FormData();
-            formData.append("file", screenshotInput.files[0]);
+            formData.append("file", fileToUpload);
             const upRes = await fetch("/api/upload-receipt", {
                 method: "POST",
                 body: formData
