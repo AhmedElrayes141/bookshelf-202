@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة التحكم | رف الكتب</title>
+    <title>لوحة التحكم | أستاذ عمر — رف الكتب</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #1e3a3d;
             --primary-dark: #14282a;
             --gold: #f2cd98;
+            --gold-soft: rgba(242, 205, 152, 0.16);
             --bg: #f9f6f0;
             --white: #ffffff;
             --danger: #c0392b;
@@ -31,7 +32,7 @@
         #loginOverlay {
             position: fixed;
             inset: 0;
-            background: var(--primary-dark);
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
             display: flex;
             justify-content: center;
             align-items: center;
@@ -44,32 +45,65 @@
             padding: 35px 30px;
             border-radius: 16px;
             width: 100%;
-            max-width: 380px;
+            max-width: 390px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+            border-top: 4px solid var(--gold);
         }
 
         .login-box h2 {
             color: var(--primary-dark);
             margin-bottom: 8px;
             border: none;
+            padding-bottom: 0;
         }
 
         .login-box p {
             color: #666;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             margin-bottom: 20px;
         }
 
         header {
-            background: var(--primary);
+            background: linear-gradient(90deg, var(--primary-dark), var(--primary));
             color: var(--gold);
-            padding: 15px 5%;
+            padding: 16px 5%;
             display: flex;
             justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 14px;
+            border-bottom: 2px solid rgba(242, 205, 152, 0.35);
+        }
+
+        .brand-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .welcome-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--gold-soft);
+            border: 1px solid rgba(242, 205, 152, 0.45);
+            color: var(--gold);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            width: fit-content;
+        }
+
+        header h1 {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        header h1 span {
+            color: var(--gold);
         }
 
         .header-actions {
@@ -97,14 +131,14 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1220px;
             margin: 25px auto;
             padding: 0 20px;
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 18px;
             margin-bottom: 25px;
         }
@@ -120,12 +154,14 @@
         .stat-card span {
             color: #666;
             font-size: 0.9rem;
+            font-weight: 600;
         }
 
         .stat-card h3 {
             color: var(--primary-dark);
             font-size: 1.8rem;
-            margin-top: 5px;
+            margin-top: 6px;
+            font-weight: 800;
         }
 
         .tabs {
@@ -143,6 +179,7 @@
             border-radius: 25px;
             font-weight: 700;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .tab-btn.active {
@@ -164,34 +201,43 @@
             border-bottom: 2px solid var(--gold);
             padding-bottom: 8px;
             display: inline-block;
+            font-size: 1.15rem;
         }
 
         .form-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
             gap: 12px;
+            align-items: center;
         }
 
         input, select, textarea {
-            padding: 10px;
+            padding: 10px 12px;
             border: 1px solid #ccc;
             border-radius: 8px;
             font-size: 0.92rem;
             width: 100%;
+            background: #fff;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
         }
 
         button {
             background: var(--primary);
             color: var(--white);
             border: none;
-            padding: 9px 16px;
+            padding: 10px 16px;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 700;
+            transition: opacity 0.2s ease;
         }
 
         button:hover {
-            opacity: 0.9;
+            opacity: 0.92;
         }
 
         .btn-sm {
@@ -269,16 +315,19 @@
 <div id="loginOverlay">
     <form class="login-box" onsubmit="handleLogin(event)">
         <h2>🔒 إدارة رف الكتب</h2>
-        <p>أدخل كلمة المرور للوصول إلى لوحة التحكم</p>
+        <p>أهلاً بك أستاذ عمر محمود حامد — أدخل كلمة المرور لفتح اللوحة</p>
         <input type="password" id="adminPassInput" placeholder="كلمة المرور" required
                style="margin-bottom: 15px; text-align: center;">
-        <button type="submit" style="width: 100%; padding: 12px;">دخول</button>
+        <button type="submit" style="width: 100%; padding: 12px;">دخول للوحة الإدارة</button>
     </form>
 </div>
 
 <div id="dashboardContent" style="display: none;">
     <header>
-        <h1>لوحة إدارة متجر رف الكتب</h1>
+        <div class="brand-block">
+            <span class="welcome-badge">👑 أهلاً بك أستاذ عمر محمود حامد</span>
+            <h1>لوحة إدارة متجر <span>رف الكتب</span></h1>
+        </div>
         <div class="header-actions">
             <a href="/">العودة للمتجر ↗</a>
             <button class="btn-logout" onclick="logout()">تسجيل خروج</button>
@@ -312,7 +361,7 @@
         </div>
 
         <div id="ordersTab" class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
                 <h2 style="margin:0;">الطلبات الواردة</h2>
                 <button onclick="loadOrders()">تحديث الطلبات ↻</button>
             </div>
@@ -397,8 +446,7 @@
 
         <div id="settingsTab" class="card" style="display: none;">
             <h2>⚙️ بيانات فودافون كاش وعنوان الفروع</h2>
-            <p style="color:#666; font-size:0.9rem; margin-bottom:18px;">يمكنك تحديث رقم محفظة فودافون كاش أو عناوين
-                الفروع من هنا في أي وقت.</p>
+            <p style="color:#666; font-size:0.9rem; margin-bottom:18px;">أهلاً بك أستاذ عمر محمود حامد — يمكنك تحديث رقم محفظة فودافون كاش أو عناوين الفروع من هنا في أي وقت.</p>
             <form onsubmit="saveStoreSettings(event)"
                   style="display:flex; flex-direction:column; gap:14px; max-width:580px;">
                 <div>
